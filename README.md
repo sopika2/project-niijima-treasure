@@ -42,15 +42,16 @@ Drive.
 1. **Create the Drive folder.** Make `Niijima-network/treasure` in your Drive. The app never
    creates it, so a dead mount can't be mistaken for an empty Drive.
 
-2. **Mount Drive so the container can write whole files.** If the mount isn't set up like this
-   yet, add these flags to your rclone mount:
+2. **Mount that folder with rclone** (its own mount, e.g. at `/mnt/treasure`) so the container
+   can write whole files:
 
    ```
-   --vfs-cache-mode writes --allow-other --uid 1000 --gid 1000
+   rclone mount gdrive:Niijima-network/treasure /mnt/treasure \
+     --vfs-cache-mode writes --allow-other --uid 1000 --gid 1000
    ```
 
-   Use your own user and group ids (`id -u`, `id -g`) and put the same numbers in `.env` as
-   `PUID` and `PGID`.
+   Use your own user and group ids (`id -u`, `id -g`), and put the same numbers in `.env` as
+   `PUID` and `PGID` and the mount folder as `TREASURE_DRIVE_DIR`.
 
 3. **Get the code and your settings files.**
 

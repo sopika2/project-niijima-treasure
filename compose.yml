@@ -25,7 +25,7 @@ services:
       # The live database, on local disk.
       - ./data:/app/data
       # Niijima-network/treasure on your mounted Google Drive.
-      - ${DRIVE_ROOT:-/mnt/gdrive}/Niijima-network/treasure:/app/drive
+      - ${TREASURE_DRIVE_DIR:-/mnt/treasure}:/app/drive
     networks:
       - proxy
     labels:
