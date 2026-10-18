@@ -51,7 +51,7 @@
 
 <figure class="chart" bind:clientWidth={width} data-tooltip={ui.charts.tooltip}>
 	<ul class="legend">
-		{#each series as item (item.label)}
+		{#each series as item, s (s)}
 			<li data-tone={item.tone}><span class="swatch"></span>{item.label}</li>
 		{/each}
 	</ul>
@@ -85,7 +85,7 @@
 				>
 			{/each}
 		{/if}
-		{#each groups as group, g (group.label)}
+		{#each groups as group, g (g)}
 			{@const x0 = pad.left + g * geometry.slot}
 			{@const start =
 				x0 + (geometry.slot - geometry.bar * series.length - 2 * (series.length - 1)) / 2}

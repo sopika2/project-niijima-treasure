@@ -183,7 +183,7 @@
 			{#if geometry.other.length > 0}
 				<path class="line compare" d={linePath(geometry.other, curve)} />
 			{/if}
-			{#each markers as marker (marker.date + marker.label)}
+			{#each markers as marker, i (i)}
 				{@const mx = geometry.x(day(marker.date))}
 				<rect class="marker" x={mx - 1.5} y={height - pad.bottom - 7} width="3" height="7"
 					><title>{marker.label}</title></rect

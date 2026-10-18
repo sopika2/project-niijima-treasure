@@ -124,6 +124,11 @@ function toCss(style: Style): string {
 		[cssName('font', 'body'), type.font_body],
 		[cssName('font', 'heading'), type.font_heading],
 		[cssName('font', 'numbers'), type.font_numbers],
+		...type.font_ransom.map((value, index): [string, string] => [
+			cssName('font', 'ransom', String(index + 1)),
+			value
+		]),
+		[cssName('font', 'ransom', 'count'), String(type.font_ransom.length)],
 		[cssName('font', 'size'), type.base_size],
 		[cssName('line', 'height'), type.line_height],
 		...Object.entries(type.size).map(([name, value]): [string, string] => [
@@ -220,6 +225,7 @@ export function htmlAttributes(style: Style): Record<string, string> {
 		'data-title': style.typography.title_style,
 		'data-texture': style.layout.texture,
 		'data-sidebar': style.layout.sidebar,
+		'data-transition': style.layout.page_transition,
 		'data-card': style.layout.card_style,
 		'data-density': style.layout.density,
 		'data-motion': style.motion.enabled ? 'on' : 'off'

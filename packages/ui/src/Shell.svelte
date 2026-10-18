@@ -1,5 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { tick } from 'svelte';
+	import CommandMenu from './CommandMenu.svelte';
 	import Icon from './Icon.svelte';
 	import Title from './Title.svelte';
 	import type { NavItem } from './types.ts';
@@ -14,26 +16,70 @@
 		action?: { label: string; onclick: () => void };
 		/** Shown above the page, e.g. problems with style.yml or backups. */
 		banner?: Snippet;
+		/** The corner plate of the command menu. */
+		plate?: { title: string; hint: string };
+		/** The money counter at the bottom of the menu. */
+		wallet?: { label: string; text: string } | null;
+		closeLabel?: string;
 		children: Snippet;
 	}
 
-	let { appName, logo = null, nav, moreLabel = 'More', action, banner, children }: Props = $props();
+	let {
+		appName,
+		logo = null,
+		nav,
+		moreLabel = 'Menu',
+		action,
+		banner,
+		plate,
+		wallet = null,
+		closeLabel = 'Close',
+		children
+	}: Props = $props();
 
 	let more = $state(false);
+	let overlay = $state<HTMLElement | null>(null);
 	const bar = $derived(nav.filter((item) => item.mobile !== false));
 	const extra = $derived(nav.filter((item) => item.mobile === false));
 	const extraActive = $derived(extra.some((item) => item.active));
+
+	async function openMenu() {
+		more = true;
+		await tick();
+		overlay?.querySelector<HTMLElement>('a[aria-current="page"], a')?.focus();
+	}
+	function key(event: KeyboardEvent) {
+		if (more && event.key === 'Escape') more = false;
+	}
 </script>
 
+<svelte:window onkeydown={key} />
+
+{#snippet brand()}
+	<a class="brand" href="/">
+		{#if logo}<img src={logo} alt={appName} />{:else}<Title
+				text={appName}
+				level={2}
+				size="md"
+			/>{/if}
+	</a>
+{/snippet}
+
 <div class="shell">
+	<nav class="persona" aria-label="Main">
+		<CommandMenu items={nav} variant="rail" {plate} {wallet} top={brand}>
+			{#snippet extra()}
+				{#if action}
+					<button type="button" class="action action-rail" onclick={action.onclick}>
+						<span class="action-inner"><Icon name="plus" />{action.label}</span>
+					</button>
+				{/if}
+			{/snippet}
+		</CommandMenu>
+	</nav>
+
 	<nav class="side" aria-label="Main">
-		<a class="brand" href="/">
-			{#if logo}<img src={logo} alt={appName} />{:else}<Title
-					text={appName}
-					level={2}
-					size="md"
-				/>{/if}
-		</a>
+		{@render brand()}
 		{#if action}
 			<button type="button" class="action action-wide" onclick={action.onclick}>
 				<span class="action-inner"><Icon name="plus" />{action.label}</span>
@@ -69,8 +115,8 @@
 						type="button"
 						class:current={extraActive}
 						aria-expanded={more}
-						aria-controls="more-menu"
-						onclick={() => (more = !more)}
+						aria-controls="command-menu"
+						onclick={openMenu}
 					>
 						<Icon name="menu" size="1.35em" />
 						<span class="bar-label">{moreLabel}</span>
@@ -81,21 +127,19 @@
 	</nav>
 
 	{#if more}
-		<button type="button" class="scrim" aria-label={moreLabel} onclick={() => (more = false)}
-		></button>
-		<ul class="more" id="more-menu">
-			{#each extra as item (item.href)}
-				<li>
-					<a
-						href={item.href}
-						aria-current={item.active ? 'page' : undefined}
-						onclick={() => (more = false)}
-					>
-						<span class="item-inner"><Icon name={item.icon} />{item.label}</span>
-					</a>
-				</li>
-			{/each}
-		</ul>
+		<div
+			class="overlay"
+			id="command-menu"
+			role="dialog"
+			aria-modal="true"
+			aria-label={moreLabel}
+			bind:this={overlay}
+		>
+			<CommandMenu items={nav} variant="full" {plate} {wallet} onpick={() => (more = false)} />
+			<button type="button" class="close" onclick={() => (more = false)}>
+				<span class="close-inner"><Icon name="close" />{closeLabel}</span>
+			</button>
+		</div>
 	{/if}
 
 	{#if action}
@@ -121,6 +165,7 @@
 		min-height: 100dvh;
 	}
 	.content {
+		view-transition-name: page;
 		width: 100%;
 		max-width: var(--tr-max-width);
 		margin-inline: auto;
@@ -157,8 +202,7 @@
 		padding: 0;
 		list-style: none;
 	}
-	.menu a,
-	.more a {
+	.menu a {
 		position: relative;
 		isolation: isolate;
 		display: block;
@@ -179,8 +223,7 @@
 		gap: var(--tr-space-sm);
 	}
 	/* The selected item flips to a slanted block with a hard offset outline. */
-	.menu a::before,
-	.more a::before {
+	.menu a::before {
 		content: '';
 		position: absolute;
 		inset: 2px -4px;
@@ -194,13 +237,11 @@
 	.menu a:hover {
 		transform: translateX(4px);
 	}
-	.menu a[aria-current='page'],
-	.more a[aria-current='page'] {
+	.menu a[aria-current='page'] {
 		color: var(--tr-color-text);
 		transform: translateX(8px);
 	}
-	.menu a[aria-current='page']::before,
-	.more a[aria-current='page']::before {
+	.menu a[aria-current='page']::before {
 		transform: skewX(var(--tr-skew)) scaleX(1);
 	}
 
@@ -275,29 +316,36 @@
 		white-space: nowrap;
 	}
 
-	.scrim {
+	/* ── Phones: the full-screen command menu ─────────────────────────────── */
+	.overlay {
 		position: fixed;
-		z-index: 11;
+		z-index: 30;
 		inset: 0;
-		border: 0;
-		background: var(--tr-color-overlay);
-	}
-	.more {
-		position: fixed;
-		z-index: 12;
-		right: var(--tr-space-md);
-		bottom: calc(var(--bar-size) + var(--tr-space-md) + env(safe-area-inset-bottom));
 		display: grid;
+		overflow-y: auto;
+		animation: swipe var(--tr-duration-normal) var(--tr-ease-emphasized) both;
+	}
+	.close {
+		position: absolute;
+		right: var(--tr-space-md);
+		bottom: calc(var(--tr-space-lg) + env(safe-area-inset-bottom));
+		min-height: 2.75rem;
+		padding: 0 var(--tr-space-md);
+		border: 2px solid var(--tr-color-paper);
+		background: var(--tr-color-ink);
+		color: var(--tr-color-paper);
+		font: inherit;
+		font-family: var(--tr-font-heading);
+		font-size: var(--tr-text-md);
+		text-transform: var(--tr-heading-case);
+		cursor: pointer;
+		transform: rotate(-4deg);
+		box-shadow: 4px 4px 0 var(--tr-color-accent);
+	}
+	.close-inner {
+		display: inline-flex;
+		align-items: center;
 		gap: var(--tr-space-xs);
-		min-width: 13rem;
-		margin: 0;
-		padding: var(--tr-space-md) var(--tr-space-lg) var(--tr-space-md) var(--tr-space-md);
-		list-style: none;
-		background: var(--tr-color-accent);
-		color: var(--tr-color-accent-text);
-		box-shadow: 6px 6px 0 var(--tr-color-paper);
-		clip-path: polygon(0 0, 100% 4%, 96% 100%, 2% 96%);
-		animation: pop var(--tr-duration-normal) var(--tr-ease-emphasized) both;
 	}
 
 	/* ── The Add button ───────────────────────────────────────────────────── */
@@ -335,6 +383,20 @@
 	.action-wide {
 		display: none;
 	}
+	.persona {
+		display: none;
+	}
+	.action-rail {
+		min-height: 2.75rem;
+		padding: 0 var(--tr-space-lg);
+		font-size: var(--tr-text-lg);
+		background: var(--tr-color-ink);
+		color: var(--tr-color-paper);
+		box-shadow: 5px 5px 0 var(--tr-color-accent);
+	}
+	.action-rail:hover {
+		box-shadow: 7px 7px 0 var(--tr-color-accent);
+	}
 	.action-float {
 		position: fixed;
 		z-index: 11;
@@ -353,8 +415,7 @@
 		}
 		.bar,
 		.action-float,
-		.scrim,
-		.more {
+		.overlay {
 			display: none;
 		}
 		.content {
@@ -382,6 +443,20 @@
 			background: var(--tr-color-background);
 			color: var(--tr-color-text);
 		}
+		/* layout.sidebar: persona swaps the plain list for the command menu. */
+		:global([data-sidebar='persona']) .shell {
+			grid-template-columns: 19rem minmax(0, 1fr);
+		}
+		:global([data-sidebar='persona']) .side {
+			display: none;
+		}
+		:global([data-sidebar='persona']) .persona {
+			position: sticky;
+			top: 0;
+			display: block;
+			height: 100dvh;
+			overflow: clip;
+		}
 		.action-wide {
 			display: block;
 			align-self: start;
@@ -391,10 +466,12 @@
 		}
 	}
 
-	@keyframes pop {
+	@keyframes swipe {
 		from {
-			opacity: 0;
-			transform: translateY(1rem) rotate(-2deg);
+			clip-path: polygon(0 0, 0 0, 0 100%, 0 100%);
+		}
+		to {
+			clip-path: polygon(0 0, 130% 0, 100% 100%, 0 100%);
 		}
 	}
 </style>

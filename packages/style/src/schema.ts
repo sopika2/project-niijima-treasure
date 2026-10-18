@@ -88,6 +88,8 @@ export const styleSchema = z.strictObject({
 		import: z.array(stylesheetUrl).max(4),
 		font_body: fontStack,
 		font_heading: fontStack,
+		/** Fonts the cut-out letters of titles and the menu are mixed from, in turn. */
+		font_ransom: z.array(fontStack).min(1).max(6),
 		font_numbers: fontStack,
 		base_size: length,
 		line_height: z.number().min(1).max(2.5),
@@ -135,8 +137,13 @@ export const styleSchema = z.strictObject({
 		dashboard_order: z.array(z.string().min(1)),
 		/** Pattern behind the page. */
 		texture: z.enum(['halftone', 'stripes', 'none']),
-		/** The sidebar on wide screens: a solid accent slab, or the same surface as cards. */
-		sidebar: z.enum(['accent', 'surface'])
+		/**
+		 * The menu on wide screens: "persona" is the cascading command menu over a starburst,
+		 * "accent" a solid red slab, "surface" the same color as cards.
+		 */
+		sidebar: z.enum(['persona', 'accent', 'surface']),
+		/** Page changes play a red/black slash wipe (only when motion is on). */
+		page_transition: z.enum(['slash', 'none'])
 	}),
 	charts: z.strictObject({
 		palette: z.array(color).min(2).max(16),
@@ -159,7 +166,10 @@ export const styleSchema = z.strictObject({
 			'budgets',
 			'goals',
 			'reports',
-			'system'
+			'system',
+			'menu',
+			'menu_title',
+			'menu_hint'
 		),
 		terms: wordGroup(
 			'balance',

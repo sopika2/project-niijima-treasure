@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { goto, onNavigate } from '$app/navigation';
+	import { formatMoney, money } from '@treasure/core';
 	import { page } from '$app/state';
 	import { Notice, Shell, Sheet, Toast, useUi } from '@treasure/ui';
 	import TransactionForm from '#lib/components/TransactionForm.svelte';
@@ -11,6 +12,31 @@
 	const copy = $derived(ui.copy);
 
 	let adding = $state(false);
+
+	const wallet = $derived({
+		label: copy.terms.total,
+		text: formatMoney(money(data.wallet.amount, data.wallet.currency), { locale: ui.locale })
+	});
+
+	/* The red slash between pages (layout.page_transition), where the browser can do it. */
+	onNavigate((navigation) => {
+		const root = document.documentElement;
+		if (
+			!document.startViewTransition ||
+			root.dataset.transition !== 'slash' ||
+			root.dataset.motion === 'off' ||
+			matchMedia('(prefers-reduced-motion: reduce)').matches ||
+			navigation.from?.url.pathname === navigation.to?.url.pathname
+		) {
+			return;
+		}
+		return new Promise((resolve) => {
+			document.startViewTransition(async () => {
+				resolve();
+				await navigation.complete;
+			});
+		});
+	});
 
 	const nav = $derived(
 		(
@@ -86,7 +112,10 @@
 	appName={copy.app_name}
 	logo={page.data.logo}
 	{nav}
-	moreLabel={copy.more}
+	moreLabel={copy.nav.menu}
+	closeLabel={copy.actions.close}
+	plate={{ title: copy.nav.menu_title, hint: copy.nav.menu_hint }}
+	{wallet}
 	action={{ label: copy.actions.quick_add, onclick: openAdd }}
 	banner={data.problems.length > 0 ? problems : undefined}
 >

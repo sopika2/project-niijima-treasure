@@ -69,12 +69,19 @@ colors:
 
 # ── Typography ───────────────────────────────────────────────────────────────
 typography:
-  # Optional extra stylesheets to load fonts from (https only). Anton and
-  # Barlow Semi Condensed ship with the app, so they work with nothing here.
+  # Optional extra stylesheets to load fonts from (https only). Anton, Barlow Semi Condensed,
+  # Abril Fatface and Bowlby One ship with the app, so they work with nothing here.
   import: []
   font_body: '"Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif'
   font_heading: 'Anton, Impact, "Arial Black", sans-serif'
   font_numbers: '"Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif'
+  # Cut-out letters (page titles, the menu) pick from these in turn, like a ransom note.
+  # Abril Fatface and Bowlby One ship with the app too.
+  font_ransom:
+    - 'Anton, Impact, sans-serif'
+    - '"Abril Fatface", Georgia, serif'
+    - '"Bowlby One", Anton, sans-serif'
+    - '"Barlow Semi Condensed", "Arial Narrow", sans-serif'
   base_size: 17px
   line_height: 1.45
   size:
@@ -134,7 +141,8 @@ layout:
   density: comfortable # comfortable | compact
   card_style: cut # flat | outlined | elevated | cut (clipped corner)
   texture: halftone # halftone | stripes | none (pattern behind the page)
-  sidebar: accent # accent (solid red slab) | surface
+  sidebar: persona # persona (command menu over a starburst) | accent (red slab) | surface
+  page_transition: slash # slash (red wipe between pages) | none
   dashboard_columns: 2 # columns of widgets on wide screens (1 to 4)
   # Order of dashboard widgets by extension id. Enabled extensions not listed
   # here are added after these, in the order config.yml lists them.
@@ -169,6 +177,9 @@ copy:
     goals: Treasures
     reports: Reports
     system: System
+    menu: Menu # the phone button that opens the full menu
+    menu_title: 'Menu: Main' # the little plate on the menu
+    menu_hint: Select a command
   terms:
     balance: Balance
     total: Total

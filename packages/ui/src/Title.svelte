@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { ransom } from './ransom.ts';
 	/**
 	 * A page title. With title_style: ransom in style.yml, every letter is a cut-out chip
 	 * (paper, ink or accent, each tilted a little), like a calling card. The full text stays
@@ -12,16 +13,9 @@
 
 	let { text, level = 1, size = 'lg' }: Props = $props();
 
-	/** Same text, same letters every time: a tiny hash per position, no randomness. */
-	function letterStyle(char: string, index: number) {
-		const seed = (char.charCodeAt(0) * 31 + index * 17 + text.length * 7) % 97;
-		const variant =
-			index === 0 ? 'accent' : (['paper', 'ink', 'paper', 'accent', 'ink'] as const)[seed % 5];
-		const turn = ((seed % 11) - 5) * 1.3;
-		const scale = 0.86 + (seed % 5) * 0.06;
-		const lift = ((seed % 7) - 3) * 0.035;
-		return { variant, style: `--turn:${turn}deg;--scale:${scale};--lift:${lift}em;--i:${index}` };
-	}
+	/** Same text, same letters every time: fonts, tilts and sizes come from ransom(). */
+	const variants = ['paper', 'ink', 'paper', 'accent', 'ink'] as const;
+	const variantOf = (index: number, pick: number) => (index === 0 ? 'accent' : variants[pick]);
 
 	const words = $derived(text.split(/\s+/).filter(Boolean));
 </script>
@@ -31,9 +25,13 @@
 	<span class="ransom" aria-hidden="true">
 		{#each words as word, w (w)}
 			<span class="word">
-				{#each [...word] as char, i (i)}
-					{@const letter = letterStyle(char, w * 13 + i)}
-					<span class="chip" data-variant={letter.variant} style={letter.style}>{char}</span>
+				{#each ransom(word, w) as letter, i (i)}
+					<span
+						class="chip"
+						class:lower={letter.lower}
+						data-variant={variantOf(w + i, letter.pick)}
+						style={letter.style}>{letter.char}</span
+					>
 				{/each}
 			</span>
 		{/each}
@@ -75,11 +73,18 @@
 	.chip {
 		display: inline-block;
 		padding: 0.06em 0.12em 0.02em;
+		font-family: var(--font, inherit);
 		font-size: calc(1em * var(--scale));
+		font-style: normal;
+		font-weight: 400;
 		line-height: 1;
+		text-transform: uppercase;
 		transform: translateY(var(--lift)) rotate(var(--turn));
 		animation: drop var(--tr-duration-slow) var(--tr-ease-emphasized) both;
 		animation-delay: calc(var(--i) * 18ms);
+	}
+	.chip.lower {
+		text-transform: lowercase;
 	}
 	.chip[data-variant='paper'] {
 		background: var(--tr-color-paper);

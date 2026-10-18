@@ -158,3 +158,36 @@ select {
 fieldset {
 	min-width: 0;
 }
+
+/* ── Page change: a red slash wipes the old page off and the new one on ─────── */
+/* Only the page itself (the Shell's main area) wipes; the menu stays put. */
+::view-transition-old(root),
+::view-transition-new(root) {
+	animation: none;
+}
+::view-transition-group(page) {
+	background: var(--tr-color-accent);
+	animation-duration: 0s;
+}
+::view-transition-old(page) {
+	animation: tr-slash-out var(--tr-duration-slow) var(--tr-ease-standard) both;
+}
+::view-transition-new(page) {
+	animation: tr-slash-in var(--tr-duration-slow) var(--tr-ease-standard) 90ms both;
+}
+@keyframes tr-slash-out {
+	from {
+		clip-path: polygon(0% 0, 130% 0, 130% 100%, -30% 100%);
+	}
+	to {
+		clip-path: polygon(130% 0, 130% 0, 130% 100%, 100% 100%);
+	}
+}
+@keyframes tr-slash-in {
+	from {
+		clip-path: polygon(-30% 0, 0% 0, -30% 100%, -30% 100%);
+	}
+	to {
+		clip-path: polygon(-30% 0, 130% 0, 100% 100%, -30% 100%);
+	}
+}

@@ -93,7 +93,15 @@ describe('compileStyle', () => {
 		expect(htmlAttributes(compile(defaults).style)).toMatchObject({
 			'data-scheme': 'dark',
 			'data-card': 'cut',
-			'data-title': 'ransom'
+			'data-title': 'ransom',
+			'data-sidebar': 'persona',
+			'data-transition': 'slash'
 		});
+	});
+
+	it('numbers the ransom fonts', () => {
+		const { css } = compile(defaults);
+		expect(css).toContain('--tr-font-ransom-2: "Abril Fatface", Georgia, serif;');
+		expect(css).toContain('--tr-font-ransom-count: 4;');
 	});
 });
