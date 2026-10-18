@@ -2,6 +2,7 @@ import { building } from '$app/env';
 import type { Handle, ServerInit } from '@sveltejs/kit/hooks';
 import { htmlAttributes } from '@treasure/style';
 import { runtime } from '#lib/server/runtime.ts';
+import { createSession, SESSION_COOKIE, SESSION_DAYS } from '#lib/server/session.ts';
 
 /**
  * Reachable without signing in: the container health check, the token-protected homepage feed,
@@ -46,7 +47,21 @@ export const handle: Handle = async ({ event, resolve }) => {
 				headers: { 'content-type': 'text/plain; charset=utf-8', ...SECURITY_HEADERS }
 			});
 		}
-		event.locals.user = user;
+		event.locals.user = { id: user.id, name: user.name };
+		// Sliding login: each visit pushes the expiry forward, so you only sign in once.
+		if (user.renew) {
+			event.cookies.set(
+				SESSION_COOKIE,
+				createSession(event.locals.user, app.access.sessionSecret),
+				{
+					path: '/',
+					httpOnly: true,
+					sameSite: 'lax',
+					secure: event.url.protocol === 'https:',
+					maxAge: SESSION_DAYS * 86_400
+				}
+			);
+		}
 	}
 
 	const attributes = Object.entries(htmlAttributes(app.style.current().style))

@@ -1,12 +1,13 @@
 import type { DiscordApp } from './discord.ts';
-import { readSession, SESSION_COOKIE, type SessionUser } from './session.ts';
+import { readSession, SESSION_COOKIE, type ReadSession, type SessionUser } from './session.ts';
 
 export type AccessUser = SessionUser;
+export type VerifiedUser = ReadSession;
 
 export interface AccessGate {
 	readonly mode: 'discord' | 'off';
 	/** Returns the signed-in user, or null when the request is not allowed in. */
-	verify(cookies: { get(name: string): string | undefined }): AccessUser | null;
+	verify(cookies: { get(name: string): string | undefined }): VerifiedUser | null;
 	/** Whether a Discord account may use the app. */
 	allows(discordId: string): boolean;
 	readonly discord: DiscordApp | null;

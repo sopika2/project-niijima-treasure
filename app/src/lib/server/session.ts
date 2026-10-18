@@ -12,7 +12,10 @@ interface Payload extends SessionUser {
 }
 
 export const SESSION_COOKIE = 'treasure_session';
-export const SESSION_DAYS = 30;
+/** About as long as browsers allow a cookie to live (400 days). Renewed on use, so it never runs out while you use the app. */
+export const SESSION_DAYS = 395;
+/** Renew the cookie once it is a day old. */
+const RENEW_AFTER_SECONDS = 86_400;
 
 const encode = (text: string) => Buffer.from(text).toString('base64url');
 const decode = (text: string) => Buffer.from(text, 'base64url').toString('utf8');
@@ -28,12 +31,17 @@ export function createSession(user: SessionUser, secret: string, now = Date.now(
 	return `${body}.${sign(body, secret)}`;
 }
 
+export interface ReadSession extends SessionUser {
+	/** True when the cookie is old enough to be reissued with a fresh expiry. */
+	readonly renew: boolean;
+}
+
 /** The user in a cookie value, or null when it is missing, tampered with or expired. */
 export function readSession(
 	value: string | undefined,
 	secret: string,
 	now = Date.now()
-): SessionUser | null {
+): ReadSession | null {
 	if (!value) return null;
 	const [body, signature] = value.split('.');
 	if (!body || !signature) return null;
@@ -43,7 +51,12 @@ export function readSession(
 	try {
 		const payload = JSON.parse(decode(body)) as Payload;
 		if (typeof payload.id !== 'string' || payload.exp * 1000 < now) return null;
-		return { id: payload.id, name: String(payload.name ?? '') };
+		const issued = payload.exp - SESSION_DAYS * 86_400;
+		return {
+			id: payload.id,
+			name: String(payload.name ?? ''),
+			renew: now / 1000 - issued > RENEW_AFTER_SECONDS
+		};
 	} catch {
 		return null;
 	}

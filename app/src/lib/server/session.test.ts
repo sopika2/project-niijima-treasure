@@ -7,7 +7,7 @@ const user = { id: '1234567890123456789', name: 'Els' };
 
 describe('login sessions', () => {
 	it('reads back a cookie it signed', () => {
-		expect(readSession(createSession(user, secret), secret)).toEqual(user);
+		expect(readSession(createSession(user, secret), secret)).toEqual({ ...user, renew: false });
 	});
 
 	it('rejects a tampered, foreign or expired cookie', () => {
@@ -19,7 +19,7 @@ describe('login sessions', () => {
 		expect(readSession(`${forged}.${signature}`, secret)).toBeNull();
 		expect(readSession(`${body}.x${signature}`, secret)).toBeNull();
 		expect(readSession(value, 'another-secret')).toBeNull();
-		expect(readSession(value, secret, Date.now() + 31 * 86_400_000)).toBeNull();
+		expect(readSession(value, secret, Date.now() + 396 * 86_400_000)).toBeNull();
 		expect(readSession(undefined, secret)).toBeNull();
 	});
 
@@ -32,10 +32,17 @@ describe('login sessions', () => {
 		const cookies = (value: string) => ({
 			get: (name: string) => (name === SESSION_COOKIE ? value : undefined)
 		});
-		expect(gate.verify(cookies(createSession(user, secret)))).toEqual(user);
+		expect(gate.verify(cookies(createSession(user, secret)))).toMatchObject(user);
 		expect(
 			gate.verify(cookies(createSession({ id: '111111111111111111', name: 'x' }, secret)))
 		).toBeNull();
 		expect(gate.allows('111111111111111111')).toBe(false);
+	});
+
+	it('asks to renew once the cookie is a day old, so the login never runs out while used', () => {
+		const issued = Date.now();
+		const value = createSession(user, secret, issued);
+		expect(readSession(value, secret, issued + 3_600_000)?.renew).toBe(false);
+		expect(readSession(value, secret, issued + 2 * 86_400_000)?.renew).toBe(true);
 	});
 });
