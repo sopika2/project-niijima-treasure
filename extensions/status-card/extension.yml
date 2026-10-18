@@ -1,0 +1,14 @@
+id: status-card
+name: Status card
+version: 1.0.0
+description: Total balance across accounts, plus whether backups and exchange rates are up to date.
+placement: dashboard
+size: wide
+reads:
+  - system
+  - accounts
+settings:
+  show_details:
+    type: boolean
+    default: true
+    label: Show backup and rate details under the total

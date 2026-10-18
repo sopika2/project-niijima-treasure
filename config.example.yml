@@ -1,0 +1,55 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  Niijima Treasury · config.yml
+#
+#  How the app behaves. (How it looks is in style.yml.)
+#  Copy this file to config.yml and change what you need; anything you leave out
+#  uses the value shown here. A typo stops the app at startup with a message
+#  naming the setting, so nothing runs on a misread value.
+#  Restart the container after editing:  docker compose restart treasure
+# ─────────────────────────────────────────────────────────────────────────────
+
+base_currency: HUF # every total and report is shown in this currency
+locale: hu-HU # number and date format, e.g. hu-HU or en-GB
+timezone: Europe/Budapest
+
+# Where the Google Drive folder Niijima-network/treasure is mounted inside the
+# container. compose.yml mounts it here; you normally don't change this.
+drive_path: /app/drive
+
+snapshots:
+  delay_minutes: 2 # save to Drive this long after the last change
+  encrypt: true # encrypt with SNAPSHOT_KEY from .env (strongly recommended)
+  keep_daily: 14
+  keep_monthly: 12
+  nightly_at: '03:30' # local time for the dated daily and monthly copies
+
+rates: # exchange rates (arrive in a later update)
+  primary: otp # otp | mnb
+  fallback: mnb # otp | mnb | none
+  schedule: '0 7-18/2 * * 1-5' # every 2 hours from 07:00 to 18:00 on weekdays
+
+projection: # the forward-looking balance (arrives in a later update)
+  horizon_months: 12
+  everyday_spending:
+    mode: average # average of recent everyday spending, or "fixed"
+    months: 3
+  # everyday_spending:
+  #   mode: fixed
+  #   per_month: 120000
+
+alerts: # Verdicts (arrive in a later update)
+  balance_floor: 50000 # warn when the projected balance drops below this
+  budget_warn_percent: 80
+  quiet_hours: '23:00-08:00' # no Discord pings in this span
+  discord: true
+
+access:
+  # Optional extra check on top of Cloudflare Access: only these emails get in.
+  allowed_emails: []
+
+# Extensions to run. Their order on the dashboard is set in style.yml.
+extensions:
+  - status-card
+  # - id: status-card
+  #   settings:
+  #     show_details: false

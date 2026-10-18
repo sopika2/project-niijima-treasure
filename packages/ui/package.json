@@ -1,0 +1,31 @@
+{
+	"name": "@treasure/ui",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Presentation components. Every color, size, font and word comes from style.yml; no data access.",
+	"type": "module",
+	"svelte": "./src/index.ts",
+	"exports": {
+		".": {
+			"types": "./src/index.ts",
+			"svelte": "./src/index.ts",
+			"default": "./src/index.ts"
+		},
+		"./base.css": "./src/base.css"
+	},
+	"dependencies": {
+		"@treasure/core": "workspace:*",
+		"@treasure/style": "workspace:*"
+	},
+	"peerDependencies": {
+		"svelte": "^5.57.0"
+	},
+	"devDependencies": {
+		"svelte": "^5.57.2",
+		"svelte-check": "^4.7.7",
+		"typescript": "~6.0.3"
+	},
+	"scripts": {
+		"check": "svelte-check --tsconfig ./tsconfig.json --fail-on-warnings"
+	}
+}

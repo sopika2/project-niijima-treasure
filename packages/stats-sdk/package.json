@@ -1,0 +1,18 @@
+{
+	"name": "@treasure/stats-sdk",
+	"version": "0.1.0",
+	"private": true,
+	"description": "The read-only data API extensions use, and the extension.yml format.",
+	"type": "module",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"check": "tsc -p tsconfig.json"
+	},
+	"dependencies": {
+		"@treasure/core": "workspace:*",
+		"yaml": "^2.9.1",
+		"zod": "^4.6.7"
+	}
+}

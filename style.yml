@@ -1,0 +1,230 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  Niijima Treasury · style.yml
+#
+#  The one file that controls how the app looks and what it calls things.
+#  Edit it like a stylesheet; the logic never changes.
+#
+#  • Save the file and the running app picks it up within a second.
+#  • A typo or an invalid value is rejected with a message naming the exact line,
+#    and the app keeps the last good version until you fix it.
+#  • Anything you delete falls back to the built-in default.
+#  • Check it any time with:  pnpm style:check path/to/style.yml
+#
+#  Value formats
+#    colors   "#e5243b", "#e5243b80", "rgb(229 36 59)", "oklch(62% 0.22 25)", "transparent"
+#    sizes    16px, 1.25rem, 0.5em, 50%, 0
+#    times    120ms, 0.4s
+#    angles   -6deg
+# ─────────────────────────────────────────────────────────────────────────────
+
+meta:
+  name: Niijima # a name for this look, shown on the System page
+
+# ── Colors ───────────────────────────────────────────────────────────────────
+# Every color exists twice: once for the dark scheme and once for the light one.
+colors:
+  scheme: dark # dark | light | auto (follow the device setting)
+
+  dark:
+    background: '#0b0a0f' # page behind everything
+    surface: '#15141c' # cards, panels, sheets
+    surface_raised: '#1e1c28' # menus, popovers, hovered rows
+    border: '#2d2a3a'
+    text: '#f5f2ec'
+    text_muted: '#a39fae' # labels, hints, secondary numbers
+    accent: '#e5243b' # Makoto red: buttons, links, focus, active navigation
+    accent_text: '#ffffff' # text drawn on top of accent
+    secondary: '#4f82e3' # Sae blue: secondary highlights, info, Sae's side
+    secondary_text: '#ffffff'
+    income: '#3ccf8e'
+    expense: '#ff7070'
+    success: '#3ccf8e'
+    warning: '#f5b942'
+    danger: '#ff4d5e'
+    focus_ring: '#e5243b'
+    overlay: '#00000099' # dimmed backdrop behind dialogs
+
+  light:
+    background: '#f6f3ee'
+    surface: '#ffffff'
+    surface_raised: '#f0ece6'
+    border: '#d9d3cb'
+    text: '#17151c'
+    text_muted: '#5f5a68'
+    accent: '#c8102e'
+    accent_text: '#ffffff'
+    secondary: '#2f5fbf'
+    secondary_text: '#ffffff'
+    income: '#16875a'
+    expense: '#c63b3b'
+    success: '#16875a'
+    warning: '#a86b00'
+    danger: '#c8102e'
+    focus_ring: '#c8102e'
+    overlay: '#17151c66'
+
+# ── Typography ───────────────────────────────────────────────────────────────
+typography:
+  # Optional stylesheets to load fonts from, e.g. a Google Fonts URL. Leave empty
+  # to use only fonts already on the device (fastest, nothing loaded from outside).
+  import: []
+  font_body: 'system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+  font_heading: '"Arial Black", "Segoe UI Black", system-ui, sans-serif'
+  font_numbers: 'system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+  base_size: 16px
+  line_height: 1.5
+  size:
+    xs: 0.75rem
+    sm: 0.875rem
+    md: 1rem
+    lg: 1.25rem
+    xl: 1.75rem
+    xxl: 2.5rem
+  weight:
+    regular: 400
+    medium: 550
+    bold: 700
+    heading: 900
+  heading_case: uppercase # none | uppercase | lowercase | capitalize
+  heading_letter_spacing: 0.04em
+  heading_italic: true # Persona-style slanted headings
+  tabular_numbers: true # numbers line up in columns
+
+# ── Shape ────────────────────────────────────────────────────────────────────
+shape:
+  spacing:
+    xs: 4px
+    sm: 8px
+    md: 16px
+    lg: 24px
+    xl: 40px
+  radius:
+    sm: 2px
+    md: 4px
+    lg: 8px
+    pill: 999px
+  border_width: 1px
+  accent_border_width: 3px # the bold stripe on highlighted cards
+  shadow:
+    card: none
+    raised: '0 12px 32px #00000066'
+  skew: -8deg # slant of tags, badges and the active nav item; 0deg turns it off
+  cut_corner: 14px # clipped top-right corner on cards; 0px for square corners
+
+# ── Motion ───────────────────────────────────────────────────────────────────
+motion:
+  enabled: true
+  respect_reduced_motion: true # follow the device's "reduce motion" setting
+  duration:
+    fast: 120ms
+    normal: 220ms
+    slow: 420ms
+  easing:
+    standard: cubic-bezier(0.2, 0.8, 0.2, 1)
+    emphasized: cubic-bezier(0.7, 0, 0.2, 1.25) # small overshoot, for menus and selections
+
+# ── Layout ───────────────────────────────────────────────────────────────────
+layout:
+  max_width: 1180px
+  density: comfortable # comfortable | compact
+  nav_desktop: sidebar # sidebar | top
+  nav_mobile: bottom # bottom | top
+  card_style: cut # flat | outlined | elevated | cut (Persona-style clipped corner)
+  dashboard_columns: 2 # columns of widgets on wide screens (1 to 4)
+  # Order of dashboard widgets by extension id. Enabled extensions not listed
+  # here are added after these, in the order config.yml lists them.
+  dashboard_order:
+    - status-card
+
+# ── Charts ───────────────────────────────────────────────────────────────────
+charts:
+  palette: ['#e5243b', '#4f82e3', '#f5b942', '#3ccf8e', '#b67cf2', '#f2789f', '#5cc8d7', '#c9c4b8']
+  line_width: 2
+  curve: monotone # linear | monotone | step
+  grid: true
+  points: false
+  area_opacity: 0.16
+  tooltip: card # card | minimal
+
+# ── Words ────────────────────────────────────────────────────────────────────
+# Every word the app shows. Change "Treasures" to "Goals" and it changes everywhere.
+copy:
+  app_name: Niijima Treasury
+  app_short_name: Treasury
+  tagline: Steal back your budget.
+  nav:
+    dashboard: Dashboard
+    transactions: Transactions
+    recurring: Recurring
+    budgets: Budgets
+    goals: Treasures
+    reports: Reports
+    system: System
+  terms:
+    balance: Balance
+    total: Total
+    income: Income
+    expense: Expense
+    transfer: Transfer
+    projected: Projected
+    goal: Treasure
+    goals: Treasures
+    alert: Verdict
+    alerts: Verdicts
+    account: Account
+    accounts: Accounts
+  actions:
+    quick_add: Quick add
+    save: Save
+    cancel: Cancel
+    snapshot_now: Take snapshot now
+  empty:
+    dashboard: No accounts yet. Once you add one, its balance shows up here.
+    widgets: No widgets enabled. List extensions under "extensions" in config.yml.
+  labels:
+    backup: Backup
+    drive: Drive folder
+    rates: Exchange rates
+  system: # the System page
+    database: Database
+    style: Look
+    config: Settings
+    state: Status
+    name: Name
+    locale: Number format
+    last_saved: Last saved
+    never: Never
+    generation: Snapshot number
+    encryption: Encryption
+    encrypted: Encrypted
+    not_encrypted: Not encrypted
+    nightly: Nightly copy at
+    file: File
+    size: Size
+    instance: Database id
+    source: Loaded from
+    defaults_used: Settings using the default
+    base_currency: Base currency
+    timezone: Time zone
+    extensions: Extensions
+    access: Sign-in
+    access_on: Cloudflare Access
+    access_off: Off (development only)
+    snapshot_taken: Snapshot saved to Drive.
+    snapshot_failed: The snapshot was not saved.
+  status:
+    healthy: All systems normal
+    degraded: Needs attention
+    snapshot_ok: Saved to Drive
+    snapshot_pending: Changes waiting to be saved
+    snapshot_never: Not saved to Drive yet
+    drive_ok: Connected
+    drive_missing: Drive folder not reachable
+    rates_ok: Up to date
+    rates_never: Not fetched yet
+    missing_rates: 'Left out of the total until an exchange rate is known:'
+
+# ── Assets ───────────────────────────────────────────────────────────────────
+assets:
+  favicon: /favicon.svg
+  logo: null # path to an image in app/static, or null to show app_name as text

@@ -1,0 +1,41 @@
+# Niijima Treasury: one container behind your existing Traefik and Cloudflare Tunnel.
+#
+#   cp config.example.yml config.yml && cp .env.example .env   (then fill in .env)
+#   docker compose up -d --build
+#
+# Moving to another server: copy this folder (compose.yml, config.yml, style.yml, .env),
+# mount the same Drive folder, run the line above. The app restores itself from Drive.
+
+services:
+  treasure:
+    build: .
+    image: niijima/treasure:latest
+    container_name: niijima-treasure
+    restart: unless-stopped
+    init: true
+    user: '${PUID:-1000}:${PGID:-1000}'
+    env_file: .env
+    environment:
+      TREASURE_CONFIG: /app/settings/config.yml
+      TREASURE_STYLE: /app/settings/style.yml
+    volumes:
+      # This folder, read-only: the app reads config.yml and style.yml from it and
+      # notices edits to style.yml without a restart.
+      - ./:/app/settings:ro
+      # The live database, on local disk.
+      - ./data:/app/data
+      # Niijima-network/treasure on your mounted Google Drive.
+      - ${DRIVE_ROOT:-/mnt/gdrive}/Niijima-network/treasure:/app/drive
+    networks:
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${TRAEFIK_NETWORK:-proxy}
+      - traefik.http.routers.treasure.rule=Host(`${TREASURE_HOST:-treasure.niijimasisters.com}`)
+      - traefik.http.routers.treasure.entrypoints=${TRAEFIK_ENTRYPOINT:-web}
+      - traefik.http.services.treasure.loadbalancer.server.port=3000
+
+networks:
+  proxy:
+    name: ${TRAEFIK_NETWORK:-proxy}
+    external: true

@@ -1,0 +1,41 @@
+{
+	"name": "@treasure/app",
+	"version": "0.1.0",
+	"private": true,
+	"description": "The SvelteKit app: pages, API routes and wiring. No money logic of its own.",
+	"type": "module",
+	"scripts": {
+		"dev": "vite dev",
+		"build": "svelte-kit sync && vite build",
+		"preview": "vite preview",
+		"start": "node build",
+		"prepare": "svelte-kit sync || echo ''",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
+		"test": "vitest run"
+	},
+	"dependencies": {
+		"better-sqlite3": "^13.0.3"
+	},
+	"devDependencies": {
+		"@sveltejs/adapter-node": "^6.0.0",
+		"@sveltejs/kit": "^3.1.0",
+		"@sveltejs/vite-plugin-svelte": "^7.3.1",
+		"@treasure/core": "workspace:*",
+		"@treasure/db": "workspace:*",
+		"@treasure/stats-sdk": "workspace:*",
+		"@treasure/style": "workspace:*",
+		"@treasure/ui": "workspace:*",
+		"@types/node": "^22.19.0",
+		"croner": "^10.0.1",
+		"jose": "^6.2.12",
+		"svelte": "^5.57.2",
+		"svelte-check": "^4.7.7",
+		"typescript": "~6.0.3",
+		"vite": "^8.3.4",
+		"vitest": "^4.1.12"
+	},
+	"imports": {
+		"#lib": "./src/lib/index.ts",
+		"#lib/*": "./src/lib/*"
+	}
+}

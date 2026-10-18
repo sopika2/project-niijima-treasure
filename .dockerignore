@@ -1,0 +1,12 @@
+**/node_modules
+**/.svelte-kit
+app/build
+data
+drive-dev
+.env
+.env.*
+!.env.example
+config.yml
+.git
+.github
+*.log

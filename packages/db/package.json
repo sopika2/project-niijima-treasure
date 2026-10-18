@@ -1,0 +1,25 @@
+{
+	"name": "@treasure/db",
+	"version": "0.1.0",
+	"private": true,
+	"description": "SQLite schema, migrations and Drive snapshots. Knows nothing about screens or styling.",
+	"type": "module",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"check": "tsc -p tsconfig.json",
+		"generate": "drizzle-kit generate"
+	},
+	"dependencies": {
+		"@treasure/core": "workspace:*",
+		"age-encryption": "^0.3.1",
+		"better-sqlite3": "^13.0.3",
+		"drizzle-orm": "^0.45.4",
+		"yaml": "^2.9.1"
+	},
+	"devDependencies": {
+		"@types/better-sqlite3": "^9.6.0",
+		"drizzle-kit": "^0.31.11"
+	}
+}

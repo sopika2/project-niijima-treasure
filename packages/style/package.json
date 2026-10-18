@@ -1,0 +1,21 @@
+{
+	"name": "@treasure/style",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Validates style.yml and compiles it into CSS variables and typed tokens.",
+	"type": "module",
+	"exports": {
+		".": "./src/index.ts",
+		"./load": "./src/load.ts"
+	},
+	"bin": {
+		"treasure-style": "./src/cli.ts"
+	},
+	"scripts": {
+		"check": "tsc -p tsconfig.json"
+	},
+	"dependencies": {
+		"yaml": "^2.9.1",
+		"zod": "^4.6.7"
+	}
+}

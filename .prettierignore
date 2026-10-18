@@ -1,0 +1,7 @@
+pnpm-lock.yaml
+packages/db/migrations/
+app/static/
+build/
+.svelte-kit/
+data/
+drive-dev/

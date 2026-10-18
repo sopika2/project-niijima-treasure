@@ -1,0 +1,17 @@
+{
+	"name": "@treasure/core",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Pure finance logic: money, currencies, conversion and configuration. No framework, no storage.",
+	"type": "module",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"check": "tsc -p tsconfig.json"
+	},
+	"dependencies": {
+		"yaml": "^2.9.1",
+		"zod": "^4.6.7"
+	}
+}

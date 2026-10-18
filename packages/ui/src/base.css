@@ -1,0 +1,70 @@
+/*
+ * Base element styles. Every value is a variable generated from style.yml;
+ * there are no colors, fonts or sizes written here.
+ */
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html {
+	font-family: var(--tr-font-body);
+	font-size: var(--tr-font-size);
+	line-height: var(--tr-line-height);
+	background: var(--tr-color-background);
+	color: var(--tr-color-text);
+	-webkit-text-size-adjust: 100%;
+	text-size-adjust: 100%;
+}
+
+body {
+	margin: 0;
+	min-height: 100dvh;
+	background: var(--tr-color-background);
+}
+
+h1,
+h2,
+h3 {
+	font-family: var(--tr-font-heading);
+	font-weight: var(--tr-weight-heading);
+	font-style: var(--tr-heading-style);
+	text-transform: var(--tr-heading-case);
+	letter-spacing: var(--tr-heading-spacing);
+	line-height: 1.1;
+}
+
+a {
+	color: inherit;
+	text-underline-offset: 0.2em;
+}
+
+:focus-visible {
+	outline: 2px solid var(--tr-color-focus-ring);
+	outline-offset: 2px;
+}
+
+::selection {
+	background: var(--tr-color-accent);
+	color: var(--tr-color-accent-text);
+}
+
+dl {
+	margin: 0;
+}
+
+code {
+	font-family: var(--tr-font-numbers);
+	font-size: 0.92em;
+	overflow-wrap: anywhere;
+}
+
+.visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
