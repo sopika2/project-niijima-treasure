@@ -102,7 +102,7 @@ export const configSchema = z.strictObject({
 		})
 		.prefault({}),
 	/** Enabled extensions. A name, or { id, settings }. */
-	extensions: z.array(extensionEntry).default(['status-card'])
+	extensions: z.array(extensionEntry).default(['spending-this-month', 'status-card'])
 });
 
 export type ConfigInput = z.input<typeof configSchema>;

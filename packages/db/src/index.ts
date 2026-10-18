@@ -7,6 +7,40 @@ export { accountBalances } from './repositories/accounts.ts';
 export type { AccountBalance } from './repositories/accounts.ts';
 export { latestMiddleRate, ratesFreshness } from './repositories/rates.ts';
 export {
+	listAccounts,
+	getAccount,
+	accountInUse,
+	createAccount,
+	updateAccount,
+	setAccountArchived,
+	AccountLockedError,
+	defaultCategories,
+	seedCategories,
+	listCategories,
+	createCategory,
+	renameCategory,
+	setCategoryArchived,
+	categoryUsage,
+	DuplicateNameError
+} from './repositories/catalog.ts';
+export type { AccountInput } from './repositories/catalog.ts';
+export {
+	createTransaction,
+	updateTransaction,
+	deleteTransaction,
+	getTransaction,
+	listTransactions,
+	periodTotals,
+	spendingByCategory,
+	frequentNotes
+} from './repositories/transactions.ts';
+export type {
+	StoredTransaction,
+	TransactionFilter,
+	PeriodTotals,
+	CategorySpending
+} from './repositories/transactions.ts';
+export {
 	takeSnapshot,
 	restoreIfMissing,
 	readManifest,

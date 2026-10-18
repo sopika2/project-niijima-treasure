@@ -68,3 +68,54 @@ code {
 	clip-path: inset(50%);
 	white-space: nowrap;
 }
+
+/* Form controls: one look everywhere, all from style.yml. */
+input:not([type='radio'], [type='checkbox'], [type='range']),
+select,
+textarea {
+	width: 100%;
+	min-width: 0;
+	min-height: 2.75rem;
+	padding: var(--tr-space-sm) var(--tr-space-md);
+	border: var(--tr-border-width) solid var(--tr-color-border);
+	border-radius: var(--tr-radius-md);
+	background: var(--tr-color-background);
+	color: var(--tr-color-text);
+	font: inherit;
+	font-size: max(16px, var(--tr-text-md)); /* 16px stops phones from zooming in */
+	transition: border-color var(--tr-duration-fast) var(--tr-ease-standard);
+}
+input:focus,
+select:focus,
+textarea:focus {
+	outline: none;
+	border-color: var(--tr-color-focus-ring);
+}
+input::placeholder,
+textarea::placeholder {
+	color: var(--tr-color-text-muted);
+	opacity: 0.7;
+}
+input[type='date'] {
+	color-scheme: inherit;
+}
+input[type='checkbox'] {
+	width: 1.15rem;
+	height: 1.15rem;
+	accent-color: var(--tr-color-accent);
+}
+select {
+	appearance: none;
+	padding-inline-end: 2.25rem;
+	background-image:
+		linear-gradient(45deg, transparent 50%, var(--tr-color-text-muted) 50%),
+		linear-gradient(135deg, var(--tr-color-text-muted) 50%, transparent 50%);
+	background-position:
+		calc(100% - 1.15rem) 55%,
+		calc(100% - 0.8rem) 55%;
+	background-size: 0.35rem 0.35rem;
+	background-repeat: no-repeat;
+}
+fieldset {
+	min-width: 0;
+}

@@ -1,6 +1,7 @@
 import { runtime } from '#lib/server/runtime.ts';
 import type { LayoutServerLoad } from './$types';
 
+/** What every page needs, signed in or not: the words and look from style.yml. */
 export const load: LayoutServerLoad = async ({ locals }) => {
 	const app = await runtime();
 	const { style, hash } = app.style.current();
@@ -15,7 +16,6 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 		styleHash: hash,
 		favicon: style.assets.favicon,
 		logo: style.assets.logo,
-		problems: app.problems(),
 		user: locals.user
 	};
 };

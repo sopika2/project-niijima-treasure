@@ -3,7 +3,7 @@ import { parse as parseYaml } from 'yaml';
 import { z } from 'zod';
 
 /** Data an extension can ask for. It gets only what its extension.yml lists under `reads`. */
-export const dataSources = ['system', 'accounts'] as const;
+export const dataSources = ['system', 'accounts', 'spending'] as const;
 export type DataSource = (typeof dataSources)[number];
 
 const settingSchema = z.discriminatedUnion('type', [

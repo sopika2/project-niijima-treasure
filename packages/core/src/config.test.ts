@@ -7,7 +7,10 @@ describe('parseConfig', () => {
 		expect(config.base_currency).toBe('HUF');
 		expect(config.snapshots.delay_minutes).toBe(2);
 		expect(config.projection.everyday_spending).toEqual({ mode: 'average', months: 3 });
-		expect(config.extensions).toEqual([{ id: 'status-card', settings: {} }]);
+		expect(config.extensions).toEqual([
+			{ id: 'spending-this-month', settings: {} },
+			{ id: 'status-card', settings: {} }
+		]);
 	});
 
 	it('normalizes extension entries', () => {

@@ -6,9 +6,10 @@ import { createSession, SESSION_COOKIE, SESSION_DAYS } from '#lib/server/session
 
 /**
  * Reachable without signing in: the container health check, the token-protected homepage feed,
- * the sign-in flow itself, and the stylesheet its pages use.
+ * the sign-in screen and flow, and the stylesheet they use.
  */
 const OPEN_PATHS = new Set([
+	'/signin',
 	'/healthz',
 	'/api/summary',
 	'/style.css',
@@ -37,10 +38,9 @@ export const handle: Handle = async ({ event, resolve }) => {
 		if (!user) {
 			const wantsPage = event.request.method === 'GET' && !event.isDataRequest;
 			if (wantsPage) {
-				return new Response(null, {
-					status: 303,
-					headers: { location: '/auth/login', ...SECURITY_HEADERS }
-				});
+				const target = event.url.pathname + event.url.search;
+				const location = target === '/' ? '/signin' : `/signin?next=${encodeURIComponent(target)}`;
+				return new Response(null, { status: 303, headers: { location, ...SECURITY_HEADERS } });
 			}
 			return new Response('Sign in first.', {
 				status: 401,

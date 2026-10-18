@@ -3,24 +3,37 @@
 	import type { HTMLButtonAttributes } from 'svelte/elements';
 
 	interface Props extends HTMLButtonAttributes {
-		variant?: 'primary' | 'secondary' | 'ghost';
+		variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
 		busy?: boolean;
+		/** Renders a link that looks like a button. */
+		href?: string;
 		children: Snippet;
 	}
 
-	let { variant = 'primary', busy = false, type = 'button', children, ...rest }: Props = $props();
+	let {
+		variant = 'primary',
+		busy = false,
+		type = 'button',
+		href,
+		children,
+		...rest
+	}: Props = $props();
 </script>
 
-<button
-	{...rest}
-	{type}
-	class="button"
-	data-variant={variant}
-	aria-busy={busy}
-	disabled={rest.disabled || busy}
->
-	{@render children()}
-</button>
+{#if href}
+	<a {href} class="button" data-variant={variant}>{@render children()}</a>
+{:else}
+	<button
+		{...rest}
+		{type}
+		class="button"
+		data-variant={variant}
+		aria-busy={busy}
+		disabled={rest.disabled || busy}
+	>
+		{@render children()}
+	</button>
+{/if}
 
 <style>
 	.button {
@@ -28,12 +41,14 @@
 		align-items: center;
 		justify-content: center;
 		gap: var(--tr-space-sm);
-		min-height: 2.5rem;
+		min-height: 2.75rem;
 		padding: 0 var(--tr-space-md);
 		border: var(--tr-border-width) solid transparent;
 		border-radius: var(--tr-radius-md);
 		font: inherit;
 		font-weight: var(--tr-weight-bold);
+		text-decoration: none;
+		white-space: nowrap;
 		cursor: pointer;
 		transition:
 			background-color var(--tr-duration-fast) var(--tr-ease-standard),
@@ -61,5 +76,10 @@
 	}
 	[data-variant='ghost']:hover:not(:disabled) {
 		background: var(--tr-color-surface-raised);
+	}
+	[data-variant='danger'] {
+		background: transparent;
+		color: var(--tr-color-danger);
+		border-color: var(--tr-color-danger);
 	}
 </style>

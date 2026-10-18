@@ -50,7 +50,10 @@ describe('restrictReader', () => {
 				accounts: [],
 				total: { amount: 0, currency: 'HUF' },
 				missingRates: []
-			})
+			}),
+			spending: async () => {
+				throw new Error('should not be called');
+			}
 		};
 		const reader = restrictReader(full, 'spending-chart', manifest.reads);
 		await expect(reader.accounts()).resolves.toMatchObject({ accounts: [] });

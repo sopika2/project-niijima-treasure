@@ -38,6 +38,26 @@ export interface AccountsData {
 	readonly missingRates: readonly string[];
 }
 
+export interface CategoryAmount {
+	readonly id: string | null;
+	readonly name: string;
+	/** 1-based index into the chart palette in style.yml. */
+	readonly color: number;
+	readonly amount: MoneyValue;
+	/** Share of the period's total, 0 to 1. */
+	readonly share: number;
+	readonly count: number;
+}
+
+export interface SpendingData {
+	/** YYYY-MM */
+	readonly month: string;
+	readonly total: MoneyValue;
+	readonly categories: readonly CategoryAmount[];
+	/** Entries left out because no exchange rate was known for them. */
+	readonly missingRates: number;
+}
+
 /**
  * The only way an extension reads data. Every method is read-only, and the app hands an
  * extension a reader that refuses sources its extension.yml did not declare under `reads`.
@@ -45,6 +65,8 @@ export interface AccountsData {
 export interface StatsReader {
 	system(): Promise<SystemInfo>;
 	accounts(): Promise<AccountsData>;
+	/** Spending by category in a month (YYYY-MM); the current month when left out. */
+	spending(month?: string): Promise<SpendingData>;
 }
 
 export class UndeclaredReadError extends Error {
@@ -66,7 +88,8 @@ export function restrictReader(
 		allowed.includes(source) ? read() : Promise.reject(new UndeclaredReadError(extension, source));
 	return {
 		system: () => guard('system', () => reader.system()),
-		accounts: () => guard('accounts', () => reader.accounts())
+		accounts: () => guard('accounts', () => reader.accounts()),
+		spending: (month) => guard('spending', () => reader.spending(month))
 	};
 }
 

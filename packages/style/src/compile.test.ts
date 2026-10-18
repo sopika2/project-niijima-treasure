@@ -28,7 +28,7 @@ describe('compileStyle', () => {
 		expect(css).toContain(":root[data-scheme='light']");
 		expect(css).toContain('--tr-color-accent: #c8102e;');
 		expect(css).toContain('--tr-skew: -8deg;');
-		expect(css).toContain('--tr-chart-1: #e5243b;');
+		expect(css).toContain('--tr-chart-1: #e66767;');
 		expect(css).toContain('prefers-reduced-motion');
 	});
 

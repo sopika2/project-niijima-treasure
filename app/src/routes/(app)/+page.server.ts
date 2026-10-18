@@ -4,6 +4,8 @@ import { logError } from '#lib/server/log.ts';
 import { runtime } from '#lib/server/runtime.ts';
 import { localDay } from '#lib/server/snapshots.ts';
 import { statsReader } from '#lib/server/stats.ts';
+import { listTransactions, periodTotals } from '@treasure/db';
+import { lookup, monthRange, transactionRow } from '#lib/server/ledger.ts';
 import type { PageServerLoad } from './$types';
 
 interface WidgetData {
@@ -52,6 +54,16 @@ export const load: PageServerLoad = async () => {
 		})
 	);
 
-	const { accounts } = await reader.accounts();
-	return { widgets, hasAccounts: accounts.length > 0 };
+	const balances = await reader.accounts();
+	const { accounts, categories } = lookup(app);
+	const month = day.slice(0, 7);
+	const { from, to } = monthRange(month);
+	return {
+		widgets,
+		balances,
+		month: periodTotals(app.treasury.db, from, to),
+		recent: listTransactions(app.treasury.db, { limit: 8 }).map((row) =>
+			transactionRow(row, accounts, categories)
+		)
+	};
 };

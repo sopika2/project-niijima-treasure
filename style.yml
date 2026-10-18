@@ -134,11 +134,14 @@ layout:
   # Order of dashboard widgets by extension id. Enabled extensions not listed
   # here are added after these, in the order config.yml lists them.
   dashboard_order:
+    - spending-this-month
     - status-card
 
 # ── Charts ───────────────────────────────────────────────────────────────────
 charts:
-  palette: ['#e5243b', '#4f82e3', '#f5b942', '#3ccf8e', '#b67cf2', '#f2789f', '#5cc8d7', '#c9c4b8']
+  # Category colors, in this fixed order. Checked for color-blind separation and contrast on
+  # the dark surface; if you change them, keep neighbours clearly different.
+  palette: ['#e66767', '#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300', '#9085e9']
   line_width: 2
   curve: monotone # linear | monotone | step
   grid: true
@@ -154,7 +157,8 @@ copy:
   tagline: Steal back your budget.
   nav:
     dashboard: Dashboard
-    transactions: Transactions
+    transactions: Activity
+    accounts: Accounts
     recurring: Recurring
     budgets: Budgets
     goals: Treasures
@@ -174,14 +178,119 @@ copy:
     account: Account
     accounts: Accounts
   actions:
-    quick_add: Quick add
+    quick_add: Add
+    add: Add
     save: Save
     cancel: Cancel
+    edit: Edit
+    delete: Delete
+    close: Close
     snapshot_now: Take snapshot now
     sign_out: Sign out
   empty:
     dashboard: No accounts yet. Once you add one, its balance shows up here.
     widgets: No widgets enabled. List extensions under "extensions" in config.yml.
+  signin: # the sign-in screen
+    kicker: Niijima Network
+    title: Treasury
+    subtitle: Your money, on the record. Sign in to open the vault.
+    button: Sign in with Discord
+    note: Only Discord accounts on the guest list get in.
+    signed_out: You signed out. See you next heist.
+    expired: That sign-in link expired. Start again.
+    failed: Discord didn't confirm the sign-in. Try again in a moment.
+    refused: This Discord account isn't on the guest list.
+    refused_help: If it's yours, add this id to config.yml under access.discord_user_ids, then restart the app.
+  dashboard:
+    this_month: This month
+    net: Net
+    recent: Recent activity
+    see_all: See all
+    no_activity: Nothing logged yet. Add your first transaction with the + button.
+    add_account: Add your first account
+    no_accounts: Start by adding the accounts you keep money in.
+    spending: Spending this month
+    other: Other
+    no_spending: No spending logged this month.
+  transactions:
+    title: Activity
+    empty: Nothing logged in this month.
+    search: Search notes
+    all_accounts: All accounts
+    all_categories: All categories
+    all_kinds: Everything
+    uncategorized: Uncategorized
+    edit: Edit transaction
+    delete_confirm: Delete this transaction? Older backups still keep it.
+    deleted: Transaction deleted.
+    saved: Saved.
+    previous_month: Previous month
+    next_month: Next month
+    this_month: Back to this month
+    filter: Filter
+  accounts:
+    title: Accounts
+    subtitle: Where your money lives.
+    new: New account
+    edit: Edit account
+    archive: Archive
+    restore: Restore
+    archived: Archived
+    empty: No accounts yet.
+    opening_balance: Starting balance
+    opening_date: Balance on date
+    include_in_total: Count in the total
+    excluded: Not in total
+    currency_locked: The currency is locked once the account has transactions.
+    saved: Account saved.
+  account_types:
+    current: Current account
+    savings: Savings
+    cash: Cash
+    card: Card
+    other: Other
+  categories:
+    title: Categories
+    new: New category
+    income: Income
+    expense: Spending
+    archive: Archive
+    restore: Restore
+    archived: Archived
+    saved: Category saved.
+    empty: None yet.
+  form:
+    kind: Type
+    amount: Amount
+    received: Amount received
+    account: Account
+    from_account: From
+    to_account: To
+    category: Category
+    date: Date
+    note: Note
+    note_placeholder: What was it?
+    name: Name
+    type: Type
+    currency: Currency
+    optional: optional
+  errors:
+    required: Fill this in.
+    invalid_amount: Enter an amount like 4500 or 12,50.
+    not_positive: Enter an amount above zero.
+    invalid_date: Pick a valid date.
+    unknown_account: Pick an account.
+    archived_account: That account is archived.
+    unknown_category: Pick a category.
+    wrong_category: That category belongs to the other type.
+    same_account: Pick two different accounts.
+    to_amount_required: Enter how much arrived in the other currency.
+    too_large: That amount is too large.
+    name_taken: That name is already used.
+    not_found: It no longer exists.
+    unknown_currency: Pick a currency from the list.
+    currency_locked: The currency is locked once the account has transactions.
+    generic: Something went wrong. Try again.
   labels:
     backup: Backup
     drive: Drive folder
@@ -214,6 +323,7 @@ copy:
     snapshot_taken: Snapshot saved to Drive.
     snapshot_failed: The snapshot was not saved.
   status:
+    title: Status
     healthy: All systems normal
     degraded: Needs attention
     snapshot_ok: Saved to Drive

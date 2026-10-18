@@ -18,7 +18,8 @@ const fake = (id: string, placement = 'dashboard'): InstalledExtension => ({
 describe('extensions', () => {
 	it('finds the shipped status card', () => {
 		const installed = installedExtensions();
-		expect(installed.get('status-card')?.manifest.reads).toEqual(['system', 'accounts']);
+		expect(installed.get('status-card')?.manifest.reads).toEqual(['system']);
+		expect(installed.get('spending-this-month')?.manifest.reads).toEqual(['spending']);
 		expect(installed.get('status-card')?.query).toBeTypeOf('function');
 	});
 

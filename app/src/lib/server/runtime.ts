@@ -19,6 +19,7 @@ import {
 	DriveUnavailableError,
 	openDatabase,
 	restoreIfMissing,
+	seedCategories,
 	snapshotKeyFrom,
 	type SnapshotKey,
 	type Treasury
@@ -168,6 +169,8 @@ async function boot(): Promise<Runtime> {
 	}
 
 	const treasury = openDatabase({ path: database, migrationsFolder: resolve(TREASURE_MIGRATIONS) });
+	const seeded = seedCategories(treasury.db);
+	if (seeded > 0) log('boot', `added ${seeded} starting categories`);
 	const snapshots = new SnapshotService({
 		treasury,
 		driveDir: drive,

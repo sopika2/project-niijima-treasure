@@ -8,15 +8,14 @@ files.
 
 ## Status
 
-**Milestone 1 of 7, the foundation, is done.** It runs, signs you in with Discord,
-backs itself up to Drive and restores itself from there. There is nothing to enter yet: accounts
-and transactions arrive in milestone 2.
+**Milestones 1 and 2 of 7 are done.** You can sign in, add accounts, and log income, spending
+and transfers (also between currencies); everything is backed up to Drive.
 
 | #   | Milestone                    | State |
 | --- | ---------------------------- | ----- |
 | 1   | Foundation                   | Done  |
-| 2   | Accounts and transactions    | Next  |
-| 3   | OTP and MNB exchange rates   |       |
+| 2   | Accounts and transactions    | Done  |
+| 3   | OTP and MNB exchange rates   | Next  |
 | 4   | Recurring items              |       |
 | 5   | Projection and homepage feed |       |
 | 6   | Budgets, Treasures, Verdicts |       |
@@ -24,15 +23,20 @@ and transactions arrive in milestone 2.
 
 What works now:
 
-- Dashboard and System pages in the Niijima look, on phone and desktop.
-- `style.yml`: one file for every color, font, size, motion, layout choice and word. Edits apply
-  within a second, and a typo is rejected with the line number while the last good version stays.
-- Encrypted snapshots to Drive two minutes after any change, on shutdown, and nightly with dated
-  daily and monthly copies. If this server has no database, it restores the latest one from Drive.
-- Safeguards so a snapshot never overwrites a different or newer database on Drive.
-- Sign in with Discord; only the account ids listed in `config.yml` get in, on every request.
+- A sign-in screen with Discord; only the account ids in `config.yml` get in, and you stay
+  signed in on each device.
+- Accounts in any supported currency, with a starting balance; archive the ones you close.
+- Categories (a starting set is created for you), renamed, added or archived on the Accounts page.
+- The **Add** button on every page (or the `n` key): spending, income, or a transfer. A transfer
+  between currencies takes both real amounts, so the rate is exactly what your bank used.
+- Activity: month by month, with search and filters; tap any entry to edit or delete it.
+- Dashboard: total balance, this month's income and spending, recent activity, spending by
+  category, and system status.
+- Accounts in another currency show their own balance; they join the HUF total once exchange
+  rates arrive in milestone 3.
+- `style.yml`: one file for every color, font, size, motion, layout choice and word.
+- Encrypted snapshots to Drive, restore-on-start, and overwrite protection.
 - `/api/summary` for the homepage and `/healthz` for the container health check.
-- The extension system, with the status card as the first extension.
 
 ## Set up on the server
 

@@ -53,6 +53,7 @@ access:
 
 # Extensions to run. Their order on the dashboard is set in style.yml.
 extensions:
+  - spending-this-month
   - status-card
   # - id: status-card
   #   settings:

@@ -139,6 +139,7 @@ export const transactions = sqliteTable(
 	},
 	(table) => [
 		index('transactions_date_idx').on(table.date),
+		index('transactions_deleted_idx').on(table.deletedAt),
 		index('transactions_recurring_idx').on(table.recurringId)
 	]
 );
@@ -157,8 +158,11 @@ export const transactionLegs = sqliteTable(
 		amountMinor: integer('amount_minor').notNull(),
 		currency: text('currency').notNull(),
 		categoryId: text('category_id').references(() => categories.id),
-		/** The same amount in the base currency at the time, so past reports never shift. */
-		baseAmountMinor: integer('base_amount_minor').notNull(),
+		/**
+		 * The same amount in the base currency at the time, so past reports never shift.
+		 * Null while no exchange rate is known for a foreign-currency entry.
+		 */
+		baseAmountMinor: integer('base_amount_minor'),
 		/** The exact rate used for base_amount_minor; null when already in the base currency. */
 		rate: text('rate'),
 		rateId: text('rate_id').references(() => exchangeRates.id)

@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull, sql } from 'drizzle-orm';
+import { and, asc, eq, isNull, lte, sql } from 'drizzle-orm';
 import type { Db } from '../client.ts';
 import { accounts, transactionLegs, transactions, type Account } from '../schema.ts';
 
@@ -8,8 +8,14 @@ export interface AccountBalance {
 	readonly balanceMinor: number;
 }
 
-/** Current balance of every account that is not archived, in display order. */
-export function accountBalances(db: Db): AccountBalance[] {
+/**
+ * Balance of every account that is not archived, in display order. With `asOf` (YYYY-MM-DD),
+ * entries dated later are left out, so a future-dated bill doesn't change today's balance.
+ */
+export function accountBalances(
+	db: Db,
+	options: { asOf?: string; includeArchived?: boolean } = {}
+): AccountBalance[] {
 	const posted = db
 		.select({
 			accountId: transactionLegs.accountId,
@@ -17,7 +23,13 @@ export function accountBalances(db: Db): AccountBalance[] {
 		})
 		.from(transactionLegs)
 		.innerJoin(transactions, eq(transactions.id, transactionLegs.transactionId))
-		.where(and(eq(transactions.status, 'posted'), isNull(transactions.deletedAt)))
+		.where(
+			and(
+				eq(transactions.status, 'posted'),
+				isNull(transactions.deletedAt),
+				options.asOf ? lte(transactions.date, options.asOf) : undefined
+			)
+		)
 		.groupBy(transactionLegs.accountId)
 		.as('posted');
 
@@ -25,8 +37,8 @@ export function accountBalances(db: Db): AccountBalance[] {
 		.select({ account: accounts, moved: sql<number>`coalesce(${posted.total}, 0)` })
 		.from(accounts)
 		.leftJoin(posted, eq(posted.accountId, accounts.id))
-		.where(eq(accounts.archived, false))
-		.orderBy(asc(accounts.sortOrder), asc(accounts.name))
+		.where(options.includeArchived ? undefined : eq(accounts.archived, false))
+		.orderBy(asc(accounts.archived), asc(accounts.sortOrder), asc(accounts.name))
 		.all()
 		.map(({ account, moved }) => ({
 			account,

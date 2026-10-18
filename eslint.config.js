@@ -52,6 +52,8 @@ export default defineConfig(
 		languageOptions: { globals: { ...globals.browser, ...globals.node } },
 		rules: {
 			'no-undef': 'off',
+			// The app is always served at the root of its own subdomain, so plain paths are correct.
+			'svelte/no-navigation-without-resolve': 'off',
 			'@typescript-eslint/no-unused-vars': [
 				'error',
 				{ argsIgnorePattern: '^_', varsIgnorePattern: '^_' }
