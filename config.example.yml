@@ -12,7 +12,7 @@ base_currency: HUF # every total and report is shown in this currency
 locale: hu-HU # number and date format, e.g. hu-HU or en-GB
 timezone: Europe/Budapest
 
-# Where the Google Drive folder Niijima-network/treasure is mounted inside the
+# Where the Google Drive folder Niijima-network/Treasure is mounted inside the
 # container. compose.yml mounts it here; you normally don't change this.
 drive_path: /app/drive
 

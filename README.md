@@ -3,7 +3,7 @@
 A private, self-hosted finance tracker for the Niijima Network, at
 `treasure.niijimasisters.com`. It answers three questions: what you have, what you spend, and
 what you will have on any future date. Everything you save ends up in your Google Drive
-(`Niijima-network/treasure/`), and the whole app moves to a new server by copying a few YAML
+(`Niijima-network/Treasure/`), and the whole app moves to a new server by copying a few YAML
 files.
 
 ## Status
@@ -39,14 +39,14 @@ What works now:
 You need Docker with Compose, your Traefik and Cloudflare Tunnel, and the rclone mount of Google
 Drive.
 
-1. **Create the Drive folder.** Make `Niijima-network/treasure` in your Drive. The app never
+1. **Create the Drive folder.** Make `Niijima-network/Treasure` in your Drive. The app never
    creates it, so a dead mount can't be mistaken for an empty Drive.
 
 2. **Mount that folder with rclone** (its own mount, e.g. at `/mnt/treasure`) so the container
    can write whole files:
 
    ```
-   rclone mount gdrive:Niijima-network/treasure /mnt/treasure \
+   rclone mount gdrive:Niijima-network/Treasure /mnt/treasure \
      --vfs-cache-mode writes --allow-other --uid 1000 --gid 1000
    ```
 
@@ -105,7 +105,7 @@ are backed up too.
 
 ## Backups and restoring
 
-Drive holds, in `Niijima-network/treasure/`:
+Drive holds, in `Niijima-network/Treasure/`:
 
 ```
 config.yml, style.yml   copies of your settings

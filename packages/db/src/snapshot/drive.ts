@@ -11,7 +11,7 @@ import { access } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
 /**
- * Layout of the app's folder on Google Drive (Niijima-network/treasure/):
+ * Layout of the app's folder on Google Drive (Niijima-network/Treasure/):
  *
  *   config.yml          copy of the server's config.yml
  *   definitions.yml     readable export of accounts, categories, rules, budgets, treasures

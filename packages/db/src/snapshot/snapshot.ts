@@ -33,7 +33,7 @@ export class SnapshotConflictError extends Error {
 
 export interface SnapshotTarget {
 	readonly treasury: Treasury;
-	/** The app's Drive folder, e.g. /app/drive (Niijima-network/treasure on Drive). */
+	/** The app's Drive folder, e.g. /app/drive (Niijima-network/Treasure on Drive). */
 	readonly driveDir: string;
 	/** A local folder for temporary files. */
 	readonly workDir: string;
