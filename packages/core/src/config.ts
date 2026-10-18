@@ -86,8 +86,19 @@ export const configSchema = z.strictObject({
 		.prefault({}),
 	access: z
 		.strictObject({
-			/** Optional extra check on top of Cloudflare Access: only these emails get in. */
-			allowed_emails: z.array(z.email()).default([])
+			/** Discord accounts allowed to sign in, by user id. */
+			discord_user_ids: z
+				.array(
+					z
+						.union([z.string(), z.number()])
+						.transform(String)
+						.pipe(
+							z
+								.string()
+								.regex(/^\d{15,21}$/, { message: 'must be a Discord user id (digits only)' })
+						)
+				)
+				.default([])
 		})
 		.prefault({}),
 	/** Enabled extensions. A name, or { id, settings }. */
@@ -115,11 +126,28 @@ function normalize(parsed: ParsedConfig): Config {
 	};
 }
 
+/**
+ * YAML reads long ids (Discord's are 18-19 digits) as numbers, which would round them. Integers
+ * are read exactly and turned back into numbers only when that is lossless; others stay text.
+ */
+function numbersFromYaml(value: unknown): unknown {
+	if (typeof value === 'bigint') {
+		return Number.isSafeInteger(Number(value)) ? Number(value) : value.toString();
+	}
+	if (Array.isArray(value)) return value.map(numbersFromYaml);
+	if (value && typeof value === 'object') {
+		return Object.fromEntries(
+			Object.entries(value).map(([key, inner]) => [key, numbersFromYaml(inner)])
+		);
+	}
+	return value;
+}
+
 /** Validates config.yml text. An empty file gives all defaults. */
 export function parseConfig(text: string, file = 'config.yml'): Config {
 	let raw: unknown;
 	try {
-		raw = parseYaml(text) ?? {};
+		raw = numbersFromYaml(parseYaml(text, { intAsBigInt: true }) ?? {});
 	} catch (error) {
 		const detail = error instanceof YAMLParseError ? error.message : String(error);
 		throw new InvalidFileError(file, `${file} is not valid YAML:\n  ${detail}`);

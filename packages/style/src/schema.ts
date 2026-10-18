@@ -156,7 +156,13 @@ export const styleSchema = z.strictObject({
 			account: words,
 			accounts: words
 		}),
-		actions: z.strictObject({ quick_add: words, save: words, cancel: words, snapshot_now: words }),
+		actions: z.strictObject({
+			quick_add: words,
+			save: words,
+			cancel: words,
+			snapshot_now: words,
+			sign_out: words
+		}),
 		empty: z.strictObject({ dashboard: words, widgets: words }),
 		labels: z.strictObject({ backup: words, drive: words, rates: words }),
 		system: z.strictObject({

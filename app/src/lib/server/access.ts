@@ -1,56 +1,46 @@
-import { createRemoteJWKSet, jwtVerify } from 'jose';
+import type { DiscordApp } from './discord.ts';
+import { readSession, SESSION_COOKIE, type SessionUser } from './session.ts';
 
-export interface AccessUser {
-	readonly email: string;
-}
+export type AccessUser = SessionUser;
 
 export interface AccessGate {
-	readonly mode: 'cloudflare' | 'off';
+	readonly mode: 'discord' | 'off';
 	/** Returns the signed-in user, or null when the request is not allowed in. */
-	verify(request: Request): Promise<AccessUser | null>;
-}
-
-function tokenFrom(request: Request): string | null {
-	const header = request.headers.get('cf-access-jwt-assertion');
-	if (header) return header;
-	const cookie = request.headers.get('cookie') ?? '';
-	const match = /(?:^|;\s*)CF_Authorization=([^;]+)/.exec(cookie);
-	return match?.[1] ?? null;
+	verify(cookies: { get(name: string): string | undefined }): AccessUser | null;
+	/** Whether a Discord account may use the app. */
+	allows(discordId: string): boolean;
+	readonly discord: DiscordApp | null;
+	readonly sessionSecret: string;
 }
 
 /**
- * Checks the token Cloudflare Access attaches to every request it lets through. The app trusts
- * nothing else: a mistake in Traefik or the tunnel can't expose it, because without a token
- * signed by your Access team for this application, every page answers 403.
+ * Only the Discord accounts listed in config.yml (access.discord_user_ids) get in. The list is
+ * checked on every request, so removing an id signs that account out straight away.
  */
-export function cloudflareAccess(options: {
-	readonly teamDomain: string;
-	readonly audience: string;
-	readonly allowedEmails: readonly string[];
+export function discordAccess(options: {
+	readonly app: DiscordApp;
+	readonly sessionSecret: string;
+	readonly allowedIds: readonly string[];
 }): AccessGate {
-	const team = options.teamDomain.replace(/^https?:\/\//, '').replace(/\/+$/, '');
-	const issuer = `https://${team}`;
-	const keys = createRemoteJWKSet(new URL(`${issuer}/cdn-cgi/access/certs`));
-	const allowed = options.allowedEmails.map((email) => email.toLowerCase());
-
+	const allowed = new Set(options.allowedIds);
 	return {
-		mode: 'cloudflare',
-		async verify(request) {
-			const token = tokenFrom(request);
-			if (!token) return null;
-			try {
-				const { payload } = await jwtVerify(token, keys, { issuer, audience: options.audience });
-				const email = typeof payload.email === 'string' ? payload.email.toLowerCase() : null;
-				if (!email) return null;
-				if (allowed.length > 0 && !allowed.includes(email)) return null;
-				return { email };
-			} catch {
-				return null;
-			}
+		mode: 'discord',
+		discord: options.app,
+		sessionSecret: options.sessionSecret,
+		allows: (id) => allowed.has(id),
+		verify(cookies) {
+			const user = readSession(cookies.get(SESSION_COOKIE), options.sessionSecret);
+			return user && allowed.has(user.id) ? user : null;
 		}
 	};
 }
 
 export function accessOff(): AccessGate {
-	return { mode: 'off', verify: async () => null };
+	return {
+		mode: 'off',
+		discord: null,
+		sessionSecret: '',
+		allows: () => true,
+		verify: () => null
+	};
 }

@@ -37,7 +37,15 @@
 	});
 </script>
 
-<PageHeader title={ui.copy.nav.system} subtitle="Niijima Treasury {data.version}" />
+<PageHeader title={ui.copy.nav.system} subtitle="Niijima Treasury {data.version}">
+	{#snippet actions()}
+		{#if data.access === 'discord'}
+			<form method="POST" action="/auth/logout">
+				<Button type="submit" variant="ghost">{ui.copy.actions.sign_out}</Button>
+			</form>
+		{/if}
+	{/snippet}
+</PageHeader>
 
 <div class="grid">
 	<Card title={ui.copy.labels.backup} accent wide>
@@ -112,8 +120,8 @@
 			<Stat label={words.timezone}>{data.config.timezone}</Stat>
 			<Stat label={words.locale}>{data.config.locale}</Stat>
 			<Stat label={words.access}>
-				<Badge tone={data.access === 'cloudflare' ? 'success' : 'warning'}>
-					{data.access === 'cloudflare' ? words.access_on : words.access_off}
+				<Badge tone={data.access === 'discord' ? 'success' : 'warning'}>
+					{data.access === 'discord' ? words.access_on : words.access_off}
 				</Badge>
 			</Stat>
 			<Stat label={words.extensions}>{data.config.extensions.join(', ') || '—'}</Stat>

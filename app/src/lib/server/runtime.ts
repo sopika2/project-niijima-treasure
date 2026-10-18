@@ -1,7 +1,9 @@
 import {
 	ACCESS_MODE,
-	CF_ACCESS_AUD,
-	CF_ACCESS_TEAM_DOMAIN,
+	DISCORD_CLIENT_ID,
+	DISCORD_CLIENT_SECRET,
+	PUBLIC_URL,
+	SESSION_SECRET,
 	SNAPSHOT_KEY,
 	SUMMARY_TOKEN,
 	TREASURE_CONFIG,
@@ -25,7 +27,7 @@ import { watchStyle, type StyleWatcher } from '@treasure/style/load';
 import { Cron } from 'croner';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { accessOff, cloudflareAccess, type AccessGate } from './access.ts';
+import { accessOff, discordAccess, type AccessGate } from './access.ts';
 import {
 	enabledExtensions,
 	installedExtensions,
@@ -102,16 +104,37 @@ async function snapshotKey(
 
 function accessGate(config: Config): AccessGate {
 	if (ACCESS_MODE === 'off') return accessOff();
-	if (!CF_ACCESS_TEAM_DOMAIN || !CF_ACCESS_AUD) {
+	const missing = Object.entries({
+		DISCORD_CLIENT_ID,
+		DISCORD_CLIENT_SECRET,
+		SESSION_SECRET,
+		PUBLIC_URL
+	})
+		.filter(([, value]) => !value)
+		.map(([name]) => name);
+	if (missing.length > 0) {
 		throw new Error(
-			'ACCESS_MODE is cloudflare, but CF_ACCESS_TEAM_DOMAIN or CF_ACCESS_AUD is missing. ' +
-				'Set both (see README), or ACCESS_MODE=off for local development only.'
+			`Discord sign-in needs ${missing.join(', ')} in .env (see README), ` +
+				'or ACCESS_MODE=off for local development only.'
 		);
 	}
-	return cloudflareAccess({
-		teamDomain: CF_ACCESS_TEAM_DOMAIN,
-		audience: CF_ACCESS_AUD,
-		allowedEmails: config.access.allowed_emails
+	if ((SESSION_SECRET ?? '').length < 32) {
+		throw new Error('SESSION_SECRET must be at least 32 characters (openssl rand -hex 32).');
+	}
+	if (config.access.discord_user_ids.length === 0) {
+		log(
+			'boot',
+			'No Discord accounts are allowed yet. Sign in once: the page shows your Discord id to add to config.yml.'
+		);
+	}
+	return discordAccess({
+		app: {
+			clientId: DISCORD_CLIENT_ID!,
+			clientSecret: DISCORD_CLIENT_SECRET!,
+			redirectUri: `${PUBLIC_URL!.replace(/\/+$/, '')}/auth/callback`
+		},
+		sessionSecret: SESSION_SECRET!,
+		allowedIds: config.access.discord_user_ids
 	});
 }
 

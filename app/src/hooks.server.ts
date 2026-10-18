@@ -3,8 +3,17 @@ import type { Handle, ServerInit } from '@sveltejs/kit/hooks';
 import { htmlAttributes } from '@treasure/style';
 import { runtime } from '#lib/server/runtime.ts';
 
-/** Paths reachable without a Cloudflare Access login: the container health check and the token-protected homepage feed. */
-const OPEN_PATHS = new Set(['/healthz', '/api/summary']);
+/**
+ * Reachable without signing in: the container health check, the token-protected homepage feed,
+ * the sign-in flow itself, and the stylesheet its pages use.
+ */
+const OPEN_PATHS = new Set([
+	'/healthz',
+	'/api/summary',
+	'/style.css',
+	'/auth/login',
+	'/auth/callback'
+]);
 
 const SECURITY_HEADERS: Record<string, string> = {
 	'x-content-type-options': 'nosniff',
@@ -22,11 +31,18 @@ export const handle: Handle = async ({ event, resolve }) => {
 	const app = await runtime();
 	event.locals.user = null;
 
-	if (!OPEN_PATHS.has(event.url.pathname) && app.access.mode === 'cloudflare') {
-		const user = await app.access.verify(event.request);
+	if (!OPEN_PATHS.has(event.url.pathname) && app.access.mode === 'discord') {
+		const user = app.access.verify(event.cookies);
 		if (!user) {
-			return new Response('Access denied. Sign in through Cloudflare Access.', {
-				status: 403,
+			const wantsPage = event.request.method === 'GET' && !event.isDataRequest;
+			if (wantsPage) {
+				return new Response(null, {
+					status: 303,
+					headers: { location: '/auth/login', ...SECURITY_HEADERS }
+				});
+			}
+			return new Response('Sign in first.', {
+				status: 401,
 				headers: { 'content-type': 'text/plain; charset=utf-8', ...SECURITY_HEADERS }
 			});
 		}

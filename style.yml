@@ -178,6 +178,7 @@ copy:
     save: Save
     cancel: Cancel
     snapshot_now: Take snapshot now
+    sign_out: Sign out
   empty:
     dashboard: No accounts yet. Once you add one, its balance shows up here.
     widgets: No widgets enabled. List extensions under "extensions" in config.yml.
@@ -208,7 +209,7 @@ copy:
     timezone: Time zone
     extensions: Extensions
     access: Sign-in
-    access_on: Cloudflare Access
+    access_on: Discord
     access_off: Off (development only)
     snapshot_taken: Snapshot saved to Drive.
     snapshot_failed: The snapshot was not saved.

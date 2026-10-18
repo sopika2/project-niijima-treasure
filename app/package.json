@@ -27,7 +27,6 @@
 		"@treasure/ui": "workspace:*",
 		"@types/node": "^22.19.0",
 		"croner": "^10.0.1",
-		"jose": "^6.2.12",
 		"svelte": "^5.57.2",
 		"svelte-check": "^4.7.7",
 		"typescript": "~6.0.3",

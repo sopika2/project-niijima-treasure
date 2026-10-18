@@ -8,7 +8,7 @@ files.
 
 ## Status
 
-**Milestone 1 of 7, the foundation, is done.** It runs, signs you in through Cloudflare Access,
+**Milestone 1 of 7, the foundation, is done.** It runs, signs you in with Discord,
 backs itself up to Drive and restores itself from there. There is nothing to enter yet: accounts
 and transactions arrive in milestone 2.
 
@@ -30,7 +30,7 @@ What works now:
 - Encrypted snapshots to Drive two minutes after any change, on shutdown, and nightly with dated
   daily and monthly copies. If this server has no database, it restores the latest one from Drive.
 - Safeguards so a snapshot never overwrites a different or newer database on Drive.
-- Cloudflare Access check on every request, plus an optional email allow-list.
+- Sign in with Discord; only the account ids listed in `config.yml` get in, on every request.
 - `/api/summary` for the homepage and `/healthz` for the container health check.
 - The extension system, with the status card as the first extension.
 
@@ -71,10 +71,11 @@ Drive.
 
    Also save the key in a password manager. Without it, the snapshots on Drive can't be opened.
 
-5. **Protect the address with Cloudflare Access.** In Zero Trust, add a self-hosted application for
-   `treasure.niijimasisters.com` with a policy that allows only your email. Copy its
-   **Application Audience (AUD) Tag** into `CF_ACCESS_AUD`, and your team domain
-   (e.g. `niijima.cloudflareaccess.com`) into `CF_ACCESS_TEAM_DOMAIN`.
+5. **Set up Discord sign-in.** In the [Discord Developer Portal](https://discord.com/developers/applications),
+   create an application, open **OAuth2**, copy the **Client ID** and **Client Secret** into
+   `.env`, and add the redirect `https://treasure.niijimasisters.com/auth/callback`. Fill
+   `SESSION_SECRET` with `openssl rand -hex 32`. Your Discord user id goes in `config.yml` under
+   `access.discord_user_ids`; if you don't know it, sign in once and the page shows it.
 
 6. **Check the Traefik settings in `.env`:** `TRAEFIK_NETWORK` (the Docker network Traefik
    watches) and `TRAEFIK_ENTRYPOINT` (the entrypoint cloudflared sends traffic to). With your

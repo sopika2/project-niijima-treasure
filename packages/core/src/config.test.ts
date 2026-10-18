@@ -33,4 +33,13 @@ describe('parseConfig', () => {
 	it('reports broken YAML clearly', () => {
 		expect(() => parseConfig('base_currency: [HUF')).toThrow(/config\.yml is not valid YAML/);
 	});
+
+	it('keeps 18-19 digit Discord ids exact, quoted or not', () => {
+		const config = parseConfig(
+			"access:\n  discord_user_ids:\n    - 1234567890123456789\n    - '987654321098765432'\n"
+		);
+		expect(config.access.discord_user_ids).toEqual(['1234567890123456789', '987654321098765432']);
+		expect(config.snapshots.delay_minutes).toBe(2);
+		expect(() => parseConfig('access:\n  discord_user_ids: [els]\n')).toThrow(/Discord user id/);
+	});
 });

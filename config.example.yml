@@ -44,8 +44,12 @@ alerts: # Verdicts (arrive in a later update)
   discord: true
 
 access:
-  # Optional extra check on top of Cloudflare Access: only these emails get in.
-  allowed_emails: []
+  # Discord accounts allowed to sign in. Find yours by signing in once (the page
+  # shows it), or in Discord: Settings → Advanced → Developer Mode, then right-click
+  # your name → Copy User ID. Quote it.
+  discord_user_ids: []
+  # discord_user_ids:
+  #   - '123456789012345678'
 
 # Extensions to run. Their order on the dashboard is set in style.yml.
 extensions:

@@ -37,20 +37,28 @@ export const variables = defineEnvVars({
 	},
 	ACCESS_MODE: {
 		description:
-			'"cloudflare" checks the Cloudflare Access login on every request; "off" is for local development only.',
+			'"discord" requires signing in with Discord on every page; "off" is for local development only.',
 		schema: (value) => {
-			const mode = optional(value) ?? 'cloudflare';
-			if (mode !== 'cloudflare' && mode !== 'off')
-				throw new Error('ACCESS_MODE must be cloudflare or off');
+			const mode = optional(value) ?? 'discord';
+			if (mode !== 'discord' && mode !== 'off')
+				throw new Error('ACCESS_MODE must be discord or off');
 			return mode;
 		}
 	},
-	CF_ACCESS_TEAM_DOMAIN: {
-		description: 'Your Cloudflare Access team domain, e.g. niijima.cloudflareaccess.com',
+	DISCORD_CLIENT_ID: {
+		description: 'OAuth2 Client ID of your Discord application.',
 		schema: optional
 	},
-	CF_ACCESS_AUD: {
-		description: 'The Application Audience (AUD) tag of the Access application.',
+	DISCORD_CLIENT_SECRET: {
+		description: 'OAuth2 Client Secret of your Discord application.',
+		schema: optional
+	},
+	SESSION_SECRET: {
+		description: 'Random string that signs login cookies (openssl rand -hex 32).',
+		schema: optional
+	},
+	PUBLIC_URL: {
+		description: 'The address people open, e.g. https://treasure.niijimasisters.com',
 		schema: optional
 	},
 	SUMMARY_TOKEN: {
