@@ -22,7 +22,7 @@ describe('watchStyle', () => {
 	it('picks up edits, including editors that save by replacing the file', async () => {
 		const path = folder();
 		watcher = watchStyle(path, shipped, quiet);
-		expect(watcher.current().style.colors.dark.accent).toBe('#e5243b');
+		expect(watcher.current().style.colors.dark.accent).toBe('#e8132b');
 
 		writeFileSync(path, 'colors:\n  dark:\n    accent: "#00aa55"\n');
 		await settle();
@@ -40,7 +40,7 @@ describe('watchStyle', () => {
 		watcher = watchStyle(path, shipped, quiet);
 		writeFileSync(path, 'colors:\n  dark:\n    accent: nope\n');
 		await settle();
-		expect(watcher.current().style.colors.dark.accent).toBe('#e5243b');
+		expect(watcher.current().style.colors.dark.accent).toBe('#e8132b');
 		expect(watcher.lastError()).toMatch(/line 3: colors\.dark\.accent/);
 
 		writeFileSync(path, readFileSync(shipped, 'utf8'));

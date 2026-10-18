@@ -42,6 +42,9 @@ export function accountBalances(
 		.all()
 		.map(({ account, moved }) => ({
 			account,
-			balanceMinor: account.openingBalanceMinor + Number(moved)
+			// The starting balance counts from its own date on.
+			balanceMinor:
+				(options.asOf && account.openingDate > options.asOf ? 0 : account.openingBalanceMinor) +
+				Number(moved)
 		}));
 }

@@ -18,7 +18,16 @@
 		trash: 'M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3',
 		archive: 'M3 4h18v4H3zM5 8v12h14V8M10 12h4',
 		search: 'M11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14Zm5-2 5 5',
-		check: 'M5 12.5 10 17l9-10'
+		check: 'M5 12.5 10 17l9-10',
+		menu: 'M4 7h16M4 12h16M4 17h10',
+		repeat: 'M17 2l3 3-3 3M20 5H8a4 4 0 0 0-4 4v1M7 22l-3-3 3-3M4 19h12a4 4 0 0 0 4-4v-1',
+		chart: 'M4 20V10M10 20V4M16 20v-7M22 20H2',
+		gem: 'M6 3h12l4 6-10 12L2 9l4-6ZM2 9h20M12 21 8 9l4-6 4 6-4 12',
+		gauge: 'M12 13l4-4M4.5 18a9 9 0 1 1 15 0',
+		gavel: 'M14 4l6 6M11 7l6 6M8 14l4-4M3 21l6-6M13 3l-3 3 8 8 3-3-8-8ZM12 21h9',
+		download: 'M12 4v11M7 10l5 5 5-5M4 20h16',
+		bell: 'M6 16V11a6 6 0 1 1 12 0v5l2 2H4l2-2ZM10 21h4',
+		star: 'M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8L12 2Z'
 	} as const;
 
 	export type IconName = keyof typeof paths | 'discord';

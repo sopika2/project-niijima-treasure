@@ -23,12 +23,13 @@ snapshots:
   keep_monthly: 12
   nightly_at: '03:30' # local time for the dated daily and monthly copies
 
-rates: # exchange rates (arrive in a later update)
+rates: # exchange rates from OTP (or the MNB as backup), fetched only for currencies you use
+  enabled: true
   primary: otp # otp | mnb
   fallback: mnb # otp | mnb | none
   schedule: '0 7-18/2 * * 1-5' # every 2 hours from 07:00 to 18:00 on weekdays
 
-projection: # the forward-looking balance (arrives in a later update)
+projection: # the Forecast on the dashboard
   horizon_months: 12
   everyday_spending:
     mode: average # average of recent everyday spending, or "fixed"
@@ -37,7 +38,7 @@ projection: # the forward-looking balance (arrives in a later update)
   #   mode: fixed
   #   per_month: 120000
 
-alerts: # Verdicts (arrive in a later update)
+alerts: # Verdicts on the dashboard, and in Discord when DISCORD_WEBHOOK_URL is set in .env
   balance_floor: 50000 # warn when the projected balance drops below this
   budget_warn_percent: 80
   quiet_hours: '23:00-08:00' # no Discord pings in this span

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import Title from './Title.svelte';
 
 	interface Props {
 		title: string;
@@ -11,9 +12,9 @@
 </script>
 
 <header class="page-header">
-	<div>
-		<h1>{title}</h1>
-		{#if subtitle}<p>{subtitle}</p>{/if}
+	<div class="text">
+		<Title text={title} />
+		{#if subtitle}<p class="subtitle"><span>{subtitle}</span></p>{/if}
 	</div>
 	{#if actions}<div class="actions">{@render actions()}</div>{/if}
 </header>
@@ -27,17 +28,28 @@
 		gap: var(--tr-space-md);
 		margin-block-end: var(--tr-space-lg);
 	}
-	h1 {
-		margin: 0;
-		font-size: var(--tr-text-xxl);
-		line-height: 1;
+	.text {
+		display: grid;
+		justify-items: start;
+		gap: var(--tr-space-sm);
 	}
-	p {
-		margin: var(--tr-space-sm) 0 0;
-		color: var(--tr-color-text-muted);
+	/* The subtitle sits on a slanted black strip under the title, like a speech caption. */
+	.subtitle {
+		margin: 0;
+		padding: 2px var(--tr-space-sm);
+		background: var(--tr-color-ink);
+		color: var(--tr-color-paper);
+		border-inline-start: var(--tr-accent-border-width) solid var(--tr-color-accent);
+		transform: skewX(var(--tr-skew));
+		font-weight: var(--tr-weight-medium);
+	}
+	.subtitle span {
+		display: inline-block;
+		transform: skewX(calc(var(--tr-skew) * -1));
 	}
 	.actions {
 		display: flex;
+		flex-wrap: wrap;
 		gap: var(--tr-space-sm);
 	}
 </style>

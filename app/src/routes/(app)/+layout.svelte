@@ -18,7 +18,11 @@
 				{ href: '/', icon: 'home', label: copy.nav.dashboard },
 				{ href: '/transactions', icon: 'activity', label: copy.nav.transactions },
 				{ href: '/accounts', icon: 'wallet', label: copy.nav.accounts },
-				{ href: '/system', icon: 'gear', label: copy.nav.system }
+				{ href: '/recurring', icon: 'repeat', label: copy.nav.recurring, mobile: false },
+				{ href: '/budgets', icon: 'gauge', label: copy.nav.budgets, mobile: false },
+				{ href: '/treasures', icon: 'gem', label: copy.nav.goals, mobile: false },
+				{ href: '/reports', icon: 'chart', label: copy.nav.reports, mobile: false },
+				{ href: '/system', icon: 'gear', label: copy.nav.system, mobile: false }
 			] as const
 		).map((item) => ({
 			...item,
@@ -82,6 +86,7 @@
 	appName={copy.app_name}
 	logo={page.data.logo}
 	{nav}
+	moreLabel={copy.more}
 	action={{ label: copy.actions.quick_add, onclick: openAdd }}
 	banner={data.problems.length > 0 ? problems : undefined}
 >

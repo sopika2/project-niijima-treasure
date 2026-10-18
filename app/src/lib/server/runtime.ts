@@ -2,6 +2,7 @@ import {
 	ACCESS_MODE,
 	DISCORD_CLIENT_ID,
 	DISCORD_CLIENT_SECRET,
+	DISCORD_WEBHOOK_URL,
 	PUBLIC_URL,
 	SESSION_SECRET,
 	SNAPSHOT_KEY,
@@ -18,6 +19,7 @@ import {
 	checkDrive,
 	DriveUnavailableError,
 	openDatabase,
+	ratesFreshness,
 	restoreIfMissing,
 	seedCategories,
 	snapshotKeyFrom,
@@ -36,7 +38,11 @@ import {
 	type InstalledExtension
 } from './extensions.ts';
 import { log, logError } from './log.ts';
+import { writeDriveExports } from './exports.ts';
+import { RateService } from './rates.ts';
+import { postDueItems } from './recurring.ts';
 import { SnapshotService } from './snapshots.ts';
+import { notifyDiscord } from './verdicts.ts';
 
 export interface Problem {
 	readonly tone: 'warning' | 'danger' | 'info';
@@ -58,6 +64,10 @@ export interface Runtime {
 	readonly style: StyleWatcher;
 	readonly treasury: Treasury;
 	readonly snapshots: SnapshotService;
+	readonly rates: RateService;
+	/** When the newest exchange rate was fetched. */
+	ratesAsOf(): string | null;
+	readonly webhook: string | null;
 	readonly access: AccessGate;
 	readonly summaryToken: string | null;
 	readonly installed: Map<string, InstalledExtension>;
@@ -108,6 +118,7 @@ function accessGate(config: Config): AccessGate {
 	const missing = Object.entries({
 		DISCORD_CLIENT_ID,
 		DISCORD_CLIENT_SECRET,
+		DISCORD_WEBHOOK_URL,
 		SESSION_SECRET,
 		PUBLIC_URL
 	})
@@ -191,15 +202,57 @@ async function boot(): Promise<Runtime> {
 	});
 	snapshots.start();
 
+	const rates = new RateService({
+		treasury,
+		base: config.base_currency,
+		timezone: config.timezone,
+		primary: config.rates.primary,
+		fallback: config.rates.fallback,
+		enabled: config.rates.enabled
+	});
+
+	// The app's own clock: everything that happens without you clicking anything.
+	const jobs: Cron[] = [];
 	const [hour, minute] = config.snapshots.nightly_at.split(':').map(Number);
-	const nightly = new Cron(
-		`${minute} ${hour} * * *`,
-		{ timezone: config.timezone, protect: true, name: 'nightly-snapshot' },
-		() => snapshots.nightly()
+	const webhook = DISCORD_WEBHOOK_URL ?? null;
+	let self: Runtime | null = null;
+	const withApp = (run: (app: Runtime) => unknown) => async () => {
+		if (!self) return;
+		try {
+			await run(self);
+		} catch (error) {
+			logError('jobs', error);
+		}
+	};
+	jobs.push(
+		new Cron(
+			`${minute} ${hour} * * *`,
+			{ timezone: config.timezone, protect: true, name: 'nightly' },
+			async () => {
+				if (self) writeDriveExports(self);
+				await snapshots.nightly();
+			}
+		),
+		new Cron(
+			config.rates.schedule,
+			{ timezone: config.timezone, protect: true, name: 'rates' },
+			async () => {
+				await rates.refresh();
+			}
+		),
+		// Every 15 minutes: post recurring items that came due, and tell Discord about new verdicts.
+		new Cron(
+			'*/15 * * * *',
+			{ timezone: config.timezone, protect: true, name: 'quarter-hour' },
+			withApp(async (app) => {
+				postDueItems(app);
+				await notifyDiscord(app, webhook);
+			})
+		)
 	);
 
 	process.once('sveltekit:shutdown', async () => {
-		nightly.stop();
+		for (const job of jobs) job.stop();
 		snapshots.stop();
 		try {
 			await snapshots.flush();
@@ -219,7 +272,7 @@ async function boot(): Promise<Runtime> {
 	if (access.mode === 'off')
 		log('boot', 'WARNING: ACCESS_MODE=off. Never expose this instance to the internet.');
 
-	return {
+	const app: Runtime = {
 		version,
 		startedAt: new Date(),
 		config,
@@ -227,6 +280,9 @@ async function boot(): Promise<Runtime> {
 		style,
 		treasury,
 		snapshots,
+		rates,
+		ratesAsOf: () => ratesFreshness(treasury.db),
+		webhook,
 		access,
 		summaryToken: SUMMARY_TOKEN ?? null,
 		installed,
@@ -259,4 +315,11 @@ async function boot(): Promise<Runtime> {
 			return list;
 		}
 	};
+
+	self = app;
+	postDueItems(app);
+	// Fetch rates at start unless the stored ones are from the last six hours.
+	const newest = ratesFreshness(treasury.db);
+	if (!newest || Date.now() - Date.parse(newest) > 6 * 3_600_000) void rates.refresh();
+	return app;
 }

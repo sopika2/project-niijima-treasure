@@ -61,6 +61,17 @@ export const variables = defineEnvVars({
 		description: 'The address people open, e.g. https://treasure.niijimasisters.com',
 		schema: optional
 	},
+	DISCORD_WEBHOOK_URL: {
+		description:
+			'Discord webhook that receives Verdicts (Server Settings → Integrations → Webhooks). Leave empty for none.',
+		schema: (value) => {
+			const url = optional(value);
+			if (url && !/^https:\/\/(discord\.com|discordapp\.com)\/api\/webhooks\//.test(url)) {
+				throw new Error('DISCORD_WEBHOOK_URL must be a https://discord.com/api/webhooks/… address');
+			}
+			return url;
+		}
+	},
 	SUMMARY_TOKEN: {
 		description: 'Token the homepage uses to read /api/summary. Leave empty to turn the feed off.',
 		schema: optional

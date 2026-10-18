@@ -8,32 +8,34 @@ files.
 
 ## Status
 
-**Milestones 1 and 2 of 7 are done.** You can sign in, add accounts, and log income, spending
-and transfers (also between currencies); everything is backed up to Drive.
+**All seven milestones are done.** Next up is the Niijima Network homepage, which reads this
+app's `/api/summary` feed.
 
-| #   | Milestone                    | State |
-| --- | ---------------------------- | ----- |
-| 1   | Foundation                   | Done  |
-| 2   | Accounts and transactions    | Done  |
-| 3   | OTP and MNB exchange rates   | Next  |
-| 4   | Recurring items              |       |
-| 5   | Projection and homepage feed |       |
-| 6   | Budgets, Treasures, Verdicts |       |
-| 7   | Reports and polish           |       |
+What it does:
 
-What works now:
-
-- A sign-in screen with Discord; only the account ids in `config.yml` get in, and you stay
-  signed in on each device.
-- Accounts in any supported currency, with a starting balance; archive the ones you close.
-- Categories (a starting set is created for you), renamed, added or archived on the Accounts page.
-- The **Add** button on every page (or the `n` key): spending, income, or a transfer. A transfer
+- **Sign-in** with Discord; only the account ids in `config.yml` get in, and you stay signed in
+  on each device.
+- **Accounts** in any supported currency, with a starting balance; archive the ones you close.
+  Categories are managed on the same page.
+- **Add** button on every page (or the `n` key): spending, income, or a transfer. A transfer
   between currencies takes both real amounts, so the rate is exactly what your bank used.
-- Activity: month by month, with search and filters; tap any entry to edit or delete it.
-- Dashboard: total balance, this month's income and spending, recent activity, spending by
-  category, and system status.
-- Accounts in another currency show their own balance; they join the HUF total once exchange
-  rates arrive in milestone 3.
+- **Activity**: month by month, with search and filters; tap any entry to edit or delete it.
+- **Exchange rates** from OTP Bank (middle, buy and sell), with the MNB's official rates as a
+  backup, fetched every 2 hours on weekdays and only for currencies you hold. Foreign accounts
+  join the HUF total at the latest rate. You can also set a rate by hand on the System page.
+- **Recurring** items (rent, salary, subscriptions, yearly bills): logged automatically when due,
+  or waiting for you to confirm the real amount.
+- **Forecast** on the dashboard: your balance day by day for the coming months, from recurring
+  items plus your usual everyday spending, with the lowest point and a "what if" for one-off
+  purchases.
+- **Budgets** per spending category, with a pace marker showing where you should be today.
+- **Treasures** (savings goals), either tied to a savings account or filled by hand, with how
+  much to put aside each month and when you'll get there at your current pace.
+- **Verdicts**: everything that needs attention (budget crossed, balance dipping below your
+  floor, items waiting, backups failing, stale rates), on the dashboard and, optionally, posted to
+  a Discord channel through a webhook.
+- **Reports**: income and spending per month, total over time, where the money went, and CSV or
+  JSON exports. A CSV of each month is also written to Drive every night.
 - `style.yml`: one file for every color, font, size, motion, layout choice and word.
 - Encrypted snapshots to Drive, restore-on-start, and overwrite protection.
 - `/api/summary` for the homepage and `/healthz` for the container health check.

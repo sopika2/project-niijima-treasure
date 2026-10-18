@@ -4,3 +4,7 @@ export * from './convert.ts';
 export * from './config.ts';
 export * from './issues.ts';
 export * from './ledger.ts';
+export * from './rates.ts';
+export * from './recurrence.ts';
+export * from './projection.ts';
+export * from './plans.ts';

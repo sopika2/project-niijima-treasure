@@ -5,7 +5,17 @@ export type { Db, Treasury, OpenOptions } from './client.ts';
 export { exportDefinitions } from './definitions.ts';
 export { accountBalances } from './repositories/accounts.ts';
 export type { AccountBalance } from './repositories/accounts.ts';
-export { latestMiddleRate, ratesFreshness } from './repositories/rates.ts';
+export {
+	insertRates,
+	valuationRate,
+	latestMiddleRate,
+	ratesFreshness,
+	currentRates,
+	rateHistory,
+	backfillBaseAmounts,
+	foreignCurrencies
+} from './repositories/rates.ts';
+export type { CurrentRate } from './repositories/rates.ts';
 export {
 	listAccounts,
 	getAccount,
@@ -32,13 +42,41 @@ export {
 	listTransactions,
 	periodTotals,
 	spendingByCategory,
-	frequentNotes
+	frequentNotes,
+	postPending,
+	averageDailySpend,
+	monthlyTotals,
+	exportRows
 } from './repositories/transactions.ts';
+export {
+	listRules,
+	getRule,
+	createRule,
+	updateRule,
+	setRuleNextDue,
+	setRulePaused,
+	deleteRule,
+	countPending
+} from './repositories/recurring.ts';
+export {
+	budgetsForMonth,
+	setBudget,
+	removeBudget,
+	listGoals,
+	createGoal,
+	updateGoal,
+	setGoalArchived,
+	addContribution,
+	contributionTotals,
+	recentContributions
+} from './repositories/plans.ts';
+export type { GoalInput } from './repositories/plans.ts';
 export type {
 	StoredTransaction,
 	TransactionFilter,
 	PeriodTotals,
-	CategorySpending
+	CategorySpending,
+	MonthTotals
 } from './repositories/transactions.ts';
 export {
 	takeSnapshot,

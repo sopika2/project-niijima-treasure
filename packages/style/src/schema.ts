@@ -26,7 +26,11 @@ const SHADOW = /^(none|[\w\s#().,%-]+)$/;
 const ASSET = /^\/[\w./-]+$/;
 
 export const color = cssText('color', COLOR, '"#e5243b" or "oklch(62% 0.22 25)"');
-export const length = cssText('size', LENGTH, '16px or 1.25rem');
+// A bare 0 is a valid size, so accept it unquoted too.
+export const length = z.preprocess(
+	(value) => (value === 0 ? '0' : value),
+	cssText('size', LENGTH, '16px or 1.25rem')
+);
 const duration = cssText('duration', DURATION, '220ms or 0.4s');
 const angle = cssText('angle', ANGLE, '-8deg');
 const easing = cssText('timing function', EASING, 'cubic-bezier(0.2, 0.8, 0.2, 1)');
@@ -67,7 +71,10 @@ const palette = z.strictObject({
 	warning: color,
 	danger: color,
 	focus_ring: color,
-	overlay: color
+	overlay: color,
+	/** The flip colors: selected items turn into ink on paper, like a highlighted menu entry. */
+	paper: color,
+	ink: color
 });
 
 export const styleSchema = z.strictObject({
@@ -101,7 +108,9 @@ export const styleSchema = z.strictObject({
 		heading_case: z.enum(['none', 'uppercase', 'lowercase', 'capitalize']),
 		heading_letter_spacing: length,
 		heading_italic: z.boolean(),
-		tabular_numbers: z.boolean()
+		tabular_numbers: z.boolean(),
+		/** "ransom" sets page titles as cut-out letters, calling-card style; "plain" as normal text. */
+		title_style: z.enum(['ransom', 'plain'])
 	}),
 	shape: z.strictObject({
 		spacing: z.strictObject({ xs: length, sm: length, md: length, lg: length, xl: length }),
@@ -121,11 +130,13 @@ export const styleSchema = z.strictObject({
 	layout: z.strictObject({
 		max_width: length,
 		density: z.enum(['comfortable', 'compact']),
-		nav_desktop: z.enum(['sidebar', 'top']),
-		nav_mobile: z.enum(['bottom', 'top']),
 		card_style: z.enum(['flat', 'outlined', 'elevated', 'cut']),
 		dashboard_columns: z.number().int().min(1).max(4),
-		dashboard_order: z.array(z.string().min(1))
+		dashboard_order: z.array(z.string().min(1)),
+		/** Pattern behind the page. */
+		texture: z.enum(['halftone', 'stripes', 'none']),
+		/** The sidebar on wide screens: a solid accent slab, or the same surface as cards. */
+		sidebar: z.enum(['accent', 'surface'])
 	}),
 	charts: z.strictObject({
 		palette: z.array(color).min(2).max(16),
@@ -198,7 +209,8 @@ export const styleSchema = z.strictObject({
 			'no_accounts',
 			'spending',
 			'other',
-			'no_spending'
+			'no_spending',
+			'coming_up'
 		),
 		transactions: wordGroup(
 			'title',
@@ -277,9 +289,152 @@ export const styleSchema = z.strictObject({
 			'not_found',
 			'unknown_currency',
 			'currency_locked',
+			'recurring_cross_currency',
+			'invalid_rate',
 			'generic'
 		),
 		labels: wordGroup('backup', 'drive', 'rates'),
+		recurring: wordGroup(
+			'title',
+			'subtitle',
+			'new',
+			'edit',
+			'empty',
+			'waiting',
+			'waiting_hint',
+			'confirm',
+			'skip',
+			'next_due',
+			'ended',
+			'paused',
+			'pause',
+			'resume',
+			'delete',
+			'delete_confirm',
+			'auto_post',
+			'auto_post_hint',
+			'amount_varies',
+			'amount_varies_hint',
+			'every',
+			'unit_daily',
+			'unit_weekly',
+			'unit_monthly',
+			'unit_yearly',
+			'day_of_month',
+			'last_day',
+			'starts',
+			'ends',
+			'per_month',
+			'saved',
+			'deleted',
+			'confirmed',
+			'skipped',
+			'name_placeholder'
+		),
+		budgets: wordGroup(
+			'title',
+			'subtitle',
+			'limit',
+			'spent',
+			'left',
+			'over_by',
+			'on_pace',
+			'projected',
+			'empty',
+			'add',
+			'remove',
+			'saved',
+			'removed',
+			'pick_category',
+			'month_total'
+		),
+		treasures: wordGroup(
+			'title',
+			'subtitle',
+			'new',
+			'edit',
+			'target',
+			'saved',
+			'deadline',
+			'linked_account',
+			'not_linked',
+			'linked_hint',
+			'put_in',
+			'put_in_hint',
+			'needed',
+			'eta',
+			'reached',
+			'late',
+			'no_pace',
+			'empty',
+			'archive',
+			'restore',
+			'archived',
+			'saved_msg',
+			'contribution_saved'
+		),
+		verdicts: wordGroup(
+			'title',
+			'none',
+			'budget_over',
+			'budget_warn',
+			'budget_pace',
+			'balance_floor',
+			'pending',
+			'goal_late',
+			'rates_failed',
+			'rates_stale',
+			'backup'
+		),
+		projection: wordGroup(
+			'title',
+			'lowest',
+			'month_end',
+			'horizon_end',
+			'basis_average',
+			'basis_fixed',
+			'what_if',
+			'what_if_hint',
+			'what_if_amount',
+			'what_if_date',
+			'what_if_apply',
+			'what_if_clear',
+			'today',
+			'balance_on',
+			'range_1m',
+			'range_3m',
+			'range_all'
+		),
+		reports: wordGroup(
+			'title',
+			'subtitle',
+			'months_6',
+			'months_12',
+			'income_vs_spending',
+			'net_worth',
+			'categories',
+			'export',
+			'export_csv',
+			'export_json',
+			'no_data',
+			'average_month'
+		),
+		rates: wordGroup(
+			'title',
+			'value',
+			'buy',
+			'sell',
+			'source',
+			'as_of',
+			'refresh',
+			'refreshed',
+			'manual',
+			'manual_hint',
+			'saved',
+			'none_needed',
+			'never'
+		),
+		more: words,
 		system: wordGroup(
 			'database',
 			'style',

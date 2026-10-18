@@ -54,6 +54,8 @@ export const configSchema = z.strictObject({
 		.prefault({}),
 	rates: z
 		.strictObject({
+			/** Fetch rates at all. Off: type them in on the System page. */
+			enabled: z.boolean().default(true),
 			primary: z.enum(['otp', 'mnb']).default('otp'),
 			fallback: z.enum(['otp', 'mnb', 'none']).default('mnb'),
 			/** Cron schedule in local time. Default: every 2 hours 07-18 on weekdays. */

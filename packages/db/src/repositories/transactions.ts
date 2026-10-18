@@ -24,11 +24,21 @@ function writeLegs(db: Db, transactionId: string, plan: PlannedTransaction): voi
 }
 
 /** Stores a checked transaction and its entries in one go. Returns its id. */
-export function createTransaction(db: Db, plan: PlannedTransaction): string {
+export function createTransaction(
+	db: Db,
+	plan: PlannedTransaction,
+	options: { status?: 'posted' | 'pending'; recurringId?: string | null } = {}
+): string {
 	return db.transaction((tx) => {
 		const [row] = tx
 			.insert(transactions)
-			.values({ date: plan.date, kind: plan.kind, note: plan.note, status: 'posted' })
+			.values({
+				date: plan.date,
+				kind: plan.kind,
+				note: plan.note,
+				status: options.status ?? 'posted',
+				recurringId: options.recurringId ?? null
+			})
 			.returning({ id: transactions.id })
 			.all();
 		if (!row) throw new Error('The transaction was not created.');
@@ -37,12 +47,15 @@ export function createTransaction(db: Db, plan: PlannedTransaction): string {
 	});
 }
 
-/** Replaces a transaction's details and entries. Returns false when it doesn't exist. */
+/**
+ * Replaces a transaction's details and entries. Returns false when it doesn't exist.
+ * Saving a pending one confirms it.
+ */
 export function updateTransaction(db: Db, id: string, plan: PlannedTransaction): boolean {
 	return db.transaction((tx) => {
 		const changed = tx
 			.update(transactions)
-			.set({ date: plan.date, kind: plan.kind, note: plan.note })
+			.set({ date: plan.date, kind: plan.kind, note: plan.note, status: 'posted' })
 			.where(and(eq(transactions.id, id), isNull(transactions.deletedAt)))
 			.run().changes;
 		if (changed === 0) return false;
@@ -106,6 +119,7 @@ export interface TransactionFilter {
 	readonly kind?: Transaction['kind'];
 	/** Matches the note, case-insensitive. */
 	readonly search?: string;
+	readonly status?: 'posted' | 'pending';
 	readonly limit?: number;
 }
 
@@ -114,6 +128,7 @@ export function listTransactions(db: Db, filter: TransactionFilter = {}): Stored
 	const conditions: SQL[] = [isNull(transactions.deletedAt)];
 	if (filter.from && filter.to) conditions.push(between(transactions.date, filter.from, filter.to));
 	if (filter.kind) conditions.push(eq(transactions.kind, filter.kind));
+	if (filter.status) conditions.push(eq(transactions.status, filter.status));
 	if (filter.search?.trim()) {
 		const escaped = filter.search
 			.trim()
@@ -199,6 +214,104 @@ export function spendingByCategory(db: Db, from: string, to: string): CategorySp
 		.map((row) => ({ ...row, amountMinor: Number(row.amountMinor), count: Number(row.count) }))
 		.filter((row) => row.amountMinor > 0)
 		.sort((a, b) => b.amountMinor - a.amountMinor);
+}
+
+/** Confirms a pending transaction as it is. */
+export function postPending(db: Db, id: string): boolean {
+	return (
+		db
+			.update(transactions)
+			.set({ status: 'posted' })
+			.where(
+				and(
+					eq(transactions.id, id),
+					eq(transactions.status, 'pending'),
+					isNull(transactions.deletedAt)
+				)
+			)
+			.run().changes > 0
+	);
+}
+
+/**
+ * Average everyday spending per day between two dates, in the base currency: expenses that did
+ * not come from a recurring item (those are already in the projection on their own).
+ */
+export function averageDailySpend(db: Db, from: string, to: string): number {
+	const row = db
+		.select({ total: sql<number>`coalesce(sum(-${transactionLegs.baseAmountMinor}), 0)` })
+		.from(transactionLegs)
+		.innerJoin(transactions, eq(transactions.id, transactionLegs.transactionId))
+		.where(
+			and(
+				live(),
+				eq(transactions.kind, 'expense'),
+				isNull(transactions.recurringId),
+				between(transactions.date, from, to)
+			)
+		)
+		.get();
+	const days = Math.max(1, Math.round((Date.parse(to) - Date.parse(from)) / 86_400_000) + 1);
+	return Math.max(0, Number(row?.total ?? 0)) / days;
+}
+
+export interface MonthTotals extends PeriodTotals {
+	/** YYYY-MM */
+	readonly month: string;
+}
+
+/** Income and spending per month between two dates, oldest first; months with nothing are 0. */
+export function monthlyTotals(db: Db, from: string, to: string): MonthTotals[] {
+	const rows = db
+		.select({
+			month: sql<string>`substr(${transactions.date}, 1, 7)`,
+			income: sql<number>`coalesce(sum(case when ${transactions.kind} = 'income' then ${transactionLegs.baseAmountMinor} end), 0)`,
+			expense: sql<number>`coalesce(sum(case when ${transactions.kind} = 'expense' then -${transactionLegs.baseAmountMinor} end), 0)`,
+			missing: sql<number>`sum(case when ${transactions.kind} != 'transfer' and ${transactionLegs.baseAmountMinor} is null then 1 else 0 end)`
+		})
+		.from(transactionLegs)
+		.innerJoin(transactions, eq(transactions.id, transactionLegs.transactionId))
+		.where(and(live(), between(transactions.date, from, to)))
+		.groupBy(sql`substr(${transactions.date}, 1, 7)`)
+		.all();
+	const byMonth = new Map(rows.map((row) => [row.month, row]));
+	const months: MonthTotals[] = [];
+	let cursor = from.slice(0, 7);
+	while (cursor <= to.slice(0, 7)) {
+		const row = byMonth.get(cursor);
+		months.push({
+			month: cursor,
+			incomeMinor: Number(row?.income ?? 0),
+			expenseMinor: Number(row?.expense ?? 0),
+			missingRates: Number(row?.missing ?? 0)
+		});
+		const [year, month] = cursor.split('-').map(Number) as [number, number];
+		cursor = month === 12 ? `${year + 1}-01` : `${year}-${String(month + 1).padStart(2, '0')}`;
+	}
+	return months;
+}
+
+/** Every live transaction with its entries between two dates, oldest first, for exports. */
+export function exportRows(db: Db, from: string, to: string) {
+	return db
+		.select({
+			id: transactions.id,
+			date: transactions.date,
+			kind: transactions.kind,
+			status: transactions.status,
+			note: transactions.note,
+			accountId: transactionLegs.accountId,
+			categoryId: transactionLegs.categoryId,
+			amountMinor: transactionLegs.amountMinor,
+			currency: transactionLegs.currency,
+			baseAmountMinor: transactionLegs.baseAmountMinor,
+			rate: transactionLegs.rate
+		})
+		.from(transactionLegs)
+		.innerJoin(transactions, eq(transactions.id, transactionLegs.transactionId))
+		.where(and(isNull(transactions.deletedAt), between(transactions.date, from, to)))
+		.orderBy(transactions.date, transactions.createdAt, transactionLegs.amountMinor)
+		.all();
 }
 
 /** Notes used before, most frequent first, for suggestions while typing. */

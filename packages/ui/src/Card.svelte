@@ -17,11 +17,11 @@
 <section class="card" class:accent class:wide>
 	{#if title || actions}
 		<header>
-			{#if title}<h2>{title}</h2>{/if}
+			{#if title}<h2 class="tab"><span>{title}</span></h2>{/if}
 			{#if actions}<div class="actions">{@render actions()}</div>{/if}
 		</header>
 	{/if}
-	{@render children()}
+	<div class="body">{@render children()}</div>
 </section>
 
 <style>
@@ -44,17 +44,40 @@
 	}
 	header {
 		display: flex;
-		align-items: baseline;
+		flex-wrap: wrap;
+		align-items: center;
 		justify-content: space-between;
-		gap: var(--tr-space-md);
+		gap: var(--tr-space-sm) var(--tr-space-md);
+		margin-block-start: calc(var(--tr-space-sm) * -1);
 	}
-	h2 {
-		margin: 0;
-		font-size: var(--tr-text-md);
+	/* The card's name is a slanted paper tag pinned to the left edge. */
+	.tab {
+		margin: 0 0 0 calc(var(--tr-space-lg) * -1 - 6px);
+		padding: 3px var(--tr-space-md) 1px calc(var(--tr-space-lg) + 4px);
+		background: var(--tr-color-paper);
+		color: var(--tr-color-ink);
+		font-size: var(--tr-text-lg);
+		line-height: 1.1;
+		transform: skewX(var(--tr-skew));
+		transform-origin: bottom left;
+	}
+	.tab span {
+		display: inline-block;
+		transform: skewX(calc(var(--tr-skew) * -1));
+	}
+	.accent .tab {
+		background: var(--tr-color-accent);
+		color: var(--tr-color-accent-text);
 	}
 	.actions {
 		display: flex;
+		align-items: center;
 		gap: var(--tr-space-sm);
+	}
+	.body {
+		display: grid;
+		gap: var(--tr-space-md);
+		min-width: 0;
 	}
 
 	/* card_style in style.yml */
@@ -66,7 +89,6 @@
 		box-shadow: var(--tr-shadow-raised);
 	}
 	:global([data-card='cut']) .card {
-		border-radius: 0;
 		clip-path: polygon(0 0, calc(100% - var(--tr-cut)) 0, 100% var(--tr-cut), 100% 100%, 0 100%);
 	}
 </style>

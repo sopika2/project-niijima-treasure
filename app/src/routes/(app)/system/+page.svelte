@@ -1,12 +1,23 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { Badge, Button, Card, Notice, PageHeader, Stat, useUi } from '@treasure/ui';
+	import { Badge, Button, Card, Icon, Notice, PageHeader, Stat, useUi } from '@treasure/ui';
+	import { errorText, submitter, type Errors } from '#lib/forms.ts';
+	import { notify } from '#lib/toast.svelte.ts';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
 	const ui = useUi();
 	const words = $derived(ui.copy.system);
 	let busy = $state(false);
+	let fetching = $state(false);
+	let rateProblem = $state<string | null>(null);
+	let rateErrors = $state<Errors>({});
+	let manualRate = $state('');
+	const rateWords = $derived(ui.copy.rates);
+	const rateText = (rate: string | null) =>
+		rate === null
+			? '—'
+			: new Intl.NumberFormat(ui.locale, { maximumFractionDigits: 4 }).format(Number(rate));
 
 	const when = (iso: string | null) =>
 		iso
@@ -98,6 +109,98 @@
 		{/if}
 	</Card>
 
+	<Card title={rateWords.title} wide>
+		{#snippet actions()}
+			{#if data.rates.rows.length > 0 && data.rates.enabled}
+				<form
+					method="POST"
+					action="?/refreshRates"
+					use:enhance={() => {
+						fetching = true;
+						return async ({ result, update }) => {
+							fetching = false;
+							rateProblem = result.type === 'failure' ? String(result.data?.rates ?? '') : null;
+							if (result.type === 'success') notify(rateWords.refreshed);
+							await update({ reset: false });
+						};
+					}}
+				>
+					<Button type="submit" variant="secondary" busy={fetching}>
+						<Icon name="repeat" />{rateWords.refresh}
+					</Button>
+				</form>
+			{/if}
+		{/snippet}
+		{#if data.rates.rows.length === 0}
+			<p class="path">{rateWords.none_needed}</p>
+		{:else}
+			<div class="table-wrap">
+				<table class="rates">
+					<thead>
+						<tr>
+							<th scope="col"></th>
+							<th scope="col">{rateWords.value}</th>
+							<th scope="col">{rateWords.buy}</th>
+							<th scope="col">{rateWords.sell}</th>
+							<th scope="col">{rateWords.as_of}</th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each data.rates.rows as row (row.currency)}
+							<tr>
+								<th scope="row">1 {row.currency}</th>
+								<td class="num strong">{rateText(row.value)} {data.rates.base}</td>
+								<td class="num">{rateText(row.buy)}</td>
+								<td class="num">{rateText(row.sell)}</td>
+								<td>
+									{row.validFrom ? when(row.validFrom) : rateWords.never}
+									{#if row.source}<Badge>{row.source.toUpperCase()}</Badge>{/if}
+								</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			</div>
+			{#if rateProblem || data.rates.status.problem}
+				<Notice tone="warning" title={ui.copy.verdicts.rates_failed}
+					>{rateProblem || data.rates.status.problem}</Notice
+				>
+			{/if}
+			<form
+				class="manual"
+				method="POST"
+				action="?/manualRate"
+				use:enhance={submitter(
+					() => {
+						manualRate = '';
+						notify(rateWords.saved);
+					},
+					(next) => (rateErrors = next)
+				)}
+			>
+				<span class="manual-title">{rateWords.manual}</span>
+				<select name="currency" aria-label={ui.copy.form.currency}>
+					{#each data.rates.rows as row (row.currency)}<option value={row.currency}
+							>{row.currency}</option
+						>{/each}
+				</select>
+				<input
+					name="rate"
+					inputmode="decimal"
+					placeholder="395.12"
+					aria-label={rateWords.value}
+					bind:value={manualRate}
+				/>
+				<Button type="submit" variant="ghost">{ui.copy.actions.save}</Button>
+				<p class="hint">
+					{errorText(ui.copy, rateErrors, 'rate') ??
+						errorText(ui.copy, rateErrors, 'currency') ??
+						rateWords.manual_hint}
+				</p>
+			</form>
+		{/if}
+	</Card>
+
 	<Card title={words.database}>
 		<dl class="stats">
 			<Stat label={words.size}>{size(data.database.bytes)}</Stat>
@@ -131,6 +234,54 @@
 </div>
 
 <style>
+	.table-wrap {
+		overflow-x: auto;
+	}
+	.rates {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: var(--tr-text-sm);
+	}
+	.rates th,
+	.rates td {
+		padding: var(--tr-space-sm) var(--tr-space-md) var(--tr-space-sm) 0;
+		border-bottom: var(--tr-border-width) solid var(--tr-color-border);
+		text-align: start;
+		white-space: nowrap;
+	}
+	.rates thead th {
+		color: var(--tr-color-text-muted);
+		font-weight: var(--tr-weight-medium);
+	}
+	.rates tbody th {
+		font-family: var(--tr-font-heading);
+		font-size: var(--tr-text-lg);
+		font-weight: var(--tr-weight-heading);
+	}
+	.num {
+		font-family: var(--tr-font-numbers);
+		font-variant-numeric: var(--tr-numeric);
+	}
+	.strong {
+		font-weight: var(--tr-weight-bold);
+	}
+	.manual {
+		display: grid;
+		grid-template-columns: 6rem 1fr auto;
+		gap: var(--tr-space-sm);
+		align-items: center;
+		margin-block-start: var(--tr-space-md);
+	}
+	.manual-title {
+		grid-column: 1 / -1;
+		font-family: var(--tr-font-heading);
+	}
+	.hint {
+		grid-column: 1 / -1;
+		margin: 0;
+		color: var(--tr-color-text-muted);
+		font-size: var(--tr-text-xs);
+	}
 	.grid {
 		display: grid;
 		gap: var(--tr-space-lg);

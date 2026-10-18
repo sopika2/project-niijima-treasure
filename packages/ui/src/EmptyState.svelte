@@ -20,9 +20,12 @@
 		justify-items: start;
 		gap: var(--tr-space-md);
 		padding: var(--tr-space-xl) var(--tr-space-lg);
-		border: var(--tr-border-width) dashed var(--tr-color-border);
-		border-radius: var(--tr-radius-lg);
-		color: var(--tr-color-text-muted);
+		border-inline-start: var(--tr-accent-border-width) solid var(--tr-color-accent);
+		background:
+			radial-gradient(circle, var(--tr-color-border) 1px, transparent 1.4px) 0 0 / 9px 9px,
+			var(--tr-color-surface);
+		color: var(--tr-color-text);
+		font-size: var(--tr-text-lg);
 	}
 	p {
 		margin: 0;

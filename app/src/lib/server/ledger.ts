@@ -1,5 +1,8 @@
 import {
+	convert,
 	LedgerError,
+	money,
+	toDecimalString,
 	type AccountInfo,
 	type CategoryInfo,
 	type FieldErrors,
@@ -123,4 +126,29 @@ export function lookup(app: Runtime) {
 		accounts: new Map(listAccounts(db, { includeArchived: true }).map((row) => [row.id, row])),
 		categories: new Map(listCategories(db, { includeArchived: true }).map((row) => [row.id, row]))
 	};
+}
+
+/**
+ * An amount in the base currency at a date's rate (or the latest rate), or null when no rate is
+ * known for that currency yet.
+ */
+export function toBase(
+	app: Runtime,
+	amountMinor: number,
+	currency: string,
+	date?: string
+): number | null {
+	const base = app.config.base_currency;
+	if (currency === base) return amountMinor;
+	const rate =
+		latestMiddleRate(app.treasury.db, currency, base, date ? `${date}T23:59:59.999Z` : undefined) ??
+		latestMiddleRate(app.treasury.db, currency, base);
+	if (!rate) return null;
+	return convert(money(amountMinor, currency), { from: currency, to: base, rate: rate.rate })
+		.amount;
+}
+
+/** Whole minor units as text the transaction rules accept, e.g. 450000 HUF → "4500". */
+export function typedAmount(amountMinor: number, currency: string): string {
+	return toDecimalString(money(Math.abs(amountMinor), currency));
 }

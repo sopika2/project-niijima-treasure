@@ -22,13 +22,19 @@
 		padding: var(--tr-space-md);
 		border-inline-start: var(--tr-accent-border-width) solid var(--tr-color-warning);
 		background: var(--tr-color-surface);
-		border-radius: var(--tr-radius-md);
+		clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
 	}
 	[data-tone='danger'] {
 		border-color: var(--tr-color-danger);
 	}
 	[data-tone='info'] {
 		border-color: var(--tr-color-secondary);
+	}
+	strong {
+		font-family: var(--tr-font-heading);
+		font-style: var(--tr-heading-style);
+		font-weight: var(--tr-weight-heading);
+		letter-spacing: var(--tr-heading-spacing);
 	}
 	.body {
 		color: var(--tr-color-text-muted);

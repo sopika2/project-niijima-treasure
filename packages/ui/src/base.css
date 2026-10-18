@@ -19,14 +19,43 @@ html {
 }
 
 body {
+	position: relative;
 	margin: 0;
 	min-height: 100dvh;
 	background: var(--tr-color-background);
 }
 
+/* The pattern behind every page (layout.texture in style.yml): red halftone dots that fade
+   out from the top-right corner, or thin diagonal stripes. It never sits on top of content. */
+body::before {
+	content: '';
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	pointer-events: none;
+}
+:root[data-texture='halftone'] body::before {
+	background-image: radial-gradient(
+		circle,
+		color-mix(in srgb, var(--tr-color-accent) 55%, transparent) 1.4px,
+		transparent 1.9px
+	);
+	background-size: 11px 11px;
+	mask-image: radial-gradient(ellipse 70% 60% at 100% 0%, black, transparent 70%);
+	opacity: 0.55;
+}
+:root[data-texture='stripes'] body::before {
+	background-image: repeating-linear-gradient(
+		-62deg,
+		transparent 0 22px,
+		color-mix(in srgb, var(--tr-color-text) 4%, transparent) 22px 24px
+	);
+}
+
 h1,
 h2,
-h3 {
+h3,
+h4 {
 	font-family: var(--tr-font-heading);
 	font-weight: var(--tr-weight-heading);
 	font-style: var(--tr-heading-style);
@@ -48,6 +77,14 @@ a {
 ::selection {
 	background: var(--tr-color-accent);
 	color: var(--tr-color-accent-text);
+}
+
+/* Big money figures use the display face. */
+.display-number {
+	font-family: var(--tr-font-heading);
+	font-style: var(--tr-heading-style);
+	letter-spacing: 0.01em;
+	line-height: 1;
 }
 
 dl {
@@ -77,9 +114,10 @@ textarea {
 	min-width: 0;
 	min-height: 2.75rem;
 	padding: var(--tr-space-sm) var(--tr-space-md);
-	border: var(--tr-border-width) solid var(--tr-color-border);
+	border: 0;
+	border-bottom: var(--tr-border-width) solid var(--tr-color-border);
 	border-radius: var(--tr-radius-md);
-	background: var(--tr-color-background);
+	background: var(--tr-color-surface-raised);
 	color: var(--tr-color-text);
 	font: inherit;
 	font-size: max(16px, var(--tr-text-md)); /* 16px stops phones from zooming in */
@@ -89,7 +127,8 @@ input:focus,
 select:focus,
 textarea:focus {
 	outline: none;
-	border-color: var(--tr-color-focus-ring);
+	border-color: var(--tr-color-accent);
+	box-shadow: 0 2px 0 var(--tr-color-accent);
 }
 input::placeholder,
 textarea::placeholder {

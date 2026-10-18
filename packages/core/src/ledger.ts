@@ -21,7 +21,8 @@ export type LedgerErrorCode =
 	| 'wrong_category'
 	| 'same_account'
 	| 'to_amount_required'
-	| 'unknown_currency';
+	| 'unknown_currency'
+	| 'recurring_cross_currency';
 
 export type FieldErrors = Partial<Record<string, LedgerErrorCode>>;
 
@@ -126,6 +127,14 @@ function readAmount(
 		errors[field] = 'invalid_amount';
 		return null;
 	}
+}
+
+/** A positive typed amount in minor units; throws LedgerError({ [field]: code }) otherwise. */
+export function checkAmount(text: string, currencyCode: string, field = 'amount'): number {
+	const errors: FieldErrors = {};
+	const amount = readAmount(text, currencyCode, field, errors);
+	if (amount === null) throw new LedgerError(errors);
+	return amount;
 }
 
 function baseValue(
@@ -344,4 +353,99 @@ export function checkCategoryName(value: string): string {
 	const name = value.trim().slice(0, 40);
 	if (!name) throw new LedgerError({ name: 'required' });
 	return name;
+}
+
+/* ── Recurring items ─────────────────────────────────────────────────────── */
+
+export interface RecurringForm extends TransactionForm {
+	readonly name: string;
+	readonly freq: string;
+	readonly interval: string;
+	readonly dayOfMonth?: string | null;
+	readonly endDate?: string | null;
+	readonly autoPost: boolean;
+	readonly amountVaries: boolean;
+}
+
+export interface CleanRecurring {
+	readonly name: string;
+	readonly kind: TransactionKind;
+	/** Positive, in the account's currency. */
+	readonly amountMinor: number;
+	readonly currency: string;
+	readonly accountId: string;
+	readonly toAccountId: string | null;
+	readonly categoryId: string | null;
+	readonly freq: 'daily' | 'weekly' | 'monthly' | 'yearly';
+	readonly interval: number;
+	readonly dayOfMonth: number | null;
+	readonly startDate: string;
+	readonly endDate: string | null;
+	readonly autoPost: boolean;
+	readonly amountVaries: boolean;
+}
+
+/**
+ * Checks a recurring item. The amount, accounts and category follow the same rules as a single
+ * transaction; a recurring transfer must stay within one currency (the amount can't change
+ * with the rate each time).
+ */
+export function checkRecurring(form: RecurringForm, context: LedgerContext): CleanRecurring {
+	const errors: FieldErrors = {};
+	const name = form.name.trim().slice(0, 60);
+	if (!name) errors.name = 'required';
+	const freq = (['daily', 'weekly', 'monthly', 'yearly'] as const).find(
+		(value) => value === form.freq
+	);
+	if (!freq) errors.freq = 'required';
+	const interval = Number(form.interval || '1');
+	if (!Number.isInteger(interval) || interval < 1 || interval > 366)
+		errors.interval = 'invalid_amount';
+	let dayOfMonth: number | null = null;
+	if (freq === 'monthly' && form.dayOfMonth) {
+		dayOfMonth = Number(form.dayOfMonth);
+		if (
+			!Number.isInteger(dayOfMonth) ||
+			!(dayOfMonth === -1 || (dayOfMonth >= 1 && dayOfMonth <= 31))
+		) {
+			errors.dayOfMonth = 'invalid_date';
+		}
+	}
+	const endDate = form.endDate?.trim() || null;
+	if (endDate && !isIsoDate(endDate)) errors.endDate = 'invalid_date';
+	else if (endDate && endDate < form.date) errors.endDate = 'invalid_date';
+
+	if (form.kind === 'transfer' && form.accountId && form.toAccountId) {
+		const from = context.accounts.get(form.accountId);
+		const to = context.accounts.get(form.toAccountId);
+		if (from && to && from.currency !== to.currency)
+			errors.toAccountId = 'recurring_cross_currency';
+	}
+
+	let plan: PlannedTransaction | null = null;
+	try {
+		plan = planTransaction({ ...form, toAmount: null }, context);
+	} catch (error) {
+		if (!(error instanceof LedgerError)) throw error;
+		Object.assign(errors, error.fields, errors);
+	}
+	if (Object.keys(errors).length > 0 || !plan || !freq) throw new LedgerError(errors);
+
+	const first = plan.legs[0]!;
+	return {
+		name,
+		kind: plan.kind,
+		amountMinor: Math.abs(first.amountMinor),
+		currency: first.currency,
+		accountId: first.accountId,
+		toAccountId: plan.kind === 'transfer' ? (plan.legs[1]?.accountId ?? null) : null,
+		categoryId: first.categoryId,
+		freq,
+		interval,
+		dayOfMonth,
+		startDate: plan.date,
+		endDate,
+		autoPost: form.autoPost,
+		amountVaries: form.amountVaries
+	};
 }

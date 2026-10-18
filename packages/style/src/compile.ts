@@ -217,8 +217,9 @@ export function compileStyle({ text, defaults, file = 'style.yml' }: CompileInpu
 export function htmlAttributes(style: Style): Record<string, string> {
 	return {
 		'data-scheme': style.colors.scheme,
-		'data-nav-desktop': style.layout.nav_desktop,
-		'data-nav-mobile': style.layout.nav_mobile,
+		'data-title': style.typography.title_style,
+		'data-texture': style.layout.texture,
+		'data-sidebar': style.layout.sidebar,
 		'data-card': style.layout.card_style,
 		'data-density': style.layout.density,
 		'data-motion': style.motion.enabled ? 'on' : 'off'

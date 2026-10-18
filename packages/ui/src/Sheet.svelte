@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import Icon from './Icon.svelte';
+	import Title from './Title.svelte';
 
 	interface Props {
 		open: boolean;
@@ -32,7 +33,7 @@
 >
 	<div class="panel">
 		<header>
-			<h2>{title}</h2>
+			<Title text={title} level={2} size="md" />
 			<button type="button" class="close" onclick={onclose} aria-label={closeLabel}>
 				<Icon name="close" />
 			</button>
@@ -75,19 +76,15 @@
 		justify-content: space-between;
 		gap: var(--tr-space-md);
 	}
-	h2 {
-		margin: 0;
-		font-size: var(--tr-text-lg);
-	}
 	.close {
 		display: grid;
 		place-items: center;
 		width: 2.5rem;
 		height: 2.5rem;
 		border: 0;
-		border-radius: var(--tr-radius-md);
-		background: var(--tr-color-surface-raised);
-		color: var(--tr-color-text);
+		background: var(--tr-color-paper);
+		color: var(--tr-color-ink);
+		transform: skewX(var(--tr-skew));
 		cursor: pointer;
 	}
 

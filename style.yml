@@ -26,69 +26,74 @@ colors:
   scheme: dark # dark | light | auto (follow the device setting)
 
   dark:
-    background: '#0b0a0f' # page behind everything
-    surface: '#15141c' # cards, panels, sheets
-    surface_raised: '#1e1c28' # menus, popovers, hovered rows
-    border: '#2d2a3a'
-    text: '#f5f2ec'
-    text_muted: '#a39fae' # labels, hints, secondary numbers
-    accent: '#e5243b' # Makoto red: buttons, links, focus, active navigation
+    background: '#000000' # page behind everything
+    surface: '#141414' # cards, panels, sheets
+    surface_raised: '#232323' # menus, popovers, hovered rows
+    border: '#3a3a3a'
+    text: '#ffffff'
+    text_muted: '#b4b0aa' # labels, hints, secondary numbers
+    accent: '#e8132b' # Makoto red: the sidebar, buttons, focus, the active item
     accent_text: '#ffffff' # text drawn on top of accent
-    secondary: '#4f82e3' # Sae blue: secondary highlights, info, Sae's side
+    secondary: '#3f7ce8' # Sae blue: transfers, info, Sae's side
     secondary_text: '#ffffff'
-    income: '#3ccf8e'
-    expense: '#ff7070'
-    success: '#3ccf8e'
-    warning: '#f5b942'
-    danger: '#ff4d5e'
-    focus_ring: '#e5243b'
-    overlay: '#00000099' # dimmed backdrop behind dialogs
+    income: '#39d98a'
+    expense: '#ff5d6c'
+    success: '#39d98a'
+    warning: '#ffc23d'
+    danger: '#ff4258'
+    focus_ring: '#ffffff'
+    overlay: '#000000cc' # dimmed backdrop behind dialogs
+    paper: '#ffffff' # a selected row flips to ink on paper
+    ink: '#000000'
 
   light:
-    background: '#f6f3ee'
+    background: '#f2efe9'
     surface: '#ffffff'
-    surface_raised: '#f0ece6'
-    border: '#d9d3cb'
-    text: '#17151c'
-    text_muted: '#5f5a68'
-    accent: '#c8102e'
+    surface_raised: '#e9e5dd'
+    border: '#cfc9bf'
+    text: '#000000'
+    text_muted: '#55504a'
+    accent: '#d10f25'
     accent_text: '#ffffff'
-    secondary: '#2f5fbf'
+    secondary: '#2459c4'
     secondary_text: '#ffffff'
-    income: '#16875a'
-    expense: '#c63b3b'
-    success: '#16875a'
-    warning: '#a86b00'
-    danger: '#c8102e'
-    focus_ring: '#c8102e'
-    overlay: '#17151c66'
+    income: '#11804f'
+    expense: '#c4202f'
+    success: '#11804f'
+    warning: '#9a6400'
+    danger: '#c4202f'
+    focus_ring: '#000000'
+    overlay: '#000000aa'
+    paper: '#000000'
+    ink: '#ffffff'
 
 # ── Typography ───────────────────────────────────────────────────────────────
 typography:
-  # Optional stylesheets to load fonts from, e.g. a Google Fonts URL. Leave empty
-  # to use only fonts already on the device (fastest, nothing loaded from outside).
+  # Optional extra stylesheets to load fonts from (https only). Anton and
+  # Barlow Semi Condensed ship with the app, so they work with nothing here.
   import: []
-  font_body: 'system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
-  font_heading: '"Arial Black", "Segoe UI Black", system-ui, sans-serif'
-  font_numbers: 'system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
-  base_size: 16px
-  line_height: 1.5
+  font_body: '"Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif'
+  font_heading: 'Anton, Impact, "Arial Black", sans-serif'
+  font_numbers: '"Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif'
+  base_size: 17px
+  line_height: 1.45
   size:
-    xs: 0.75rem
-    sm: 0.875rem
+    xs: 0.78rem
+    sm: 0.9rem
     md: 1rem
-    lg: 1.25rem
-    xl: 1.75rem
-    xxl: 2.5rem
+    lg: 1.3rem
+    xl: 1.9rem
+    xxl: 3rem
   weight:
     regular: 400
-    medium: 550
+    medium: 500
     bold: 700
-    heading: 900
+    heading: 400 # Anton has one weight; it is already heavy
   heading_case: uppercase # none | uppercase | lowercase | capitalize
-  heading_letter_spacing: 0.04em
-  heading_italic: true # Persona-style slanted headings
+  heading_letter_spacing: 0.02em
+  heading_italic: true # slanted headings
   tabular_numbers: true # numbers line up in columns
+  title_style: ransom # ransom (cut-out letters, calling-card style) | plain
 
 # ── Shape ────────────────────────────────────────────────────────────────────
 shape:
@@ -99,17 +104,17 @@ shape:
     lg: 24px
     xl: 40px
   radius:
-    sm: 2px
-    md: 4px
-    lg: 8px
+    sm: 0
+    md: 0
+    lg: 0
     pill: 999px
-  border_width: 1px
-  accent_border_width: 3px # the bold stripe on highlighted cards
+  border_width: 2px
+  accent_border_width: 4px # the bold stripe on highlighted cards
   shadow:
     card: none
-    raised: '0 12px 32px #00000066'
-  skew: -8deg # slant of tags, badges and the active nav item; 0deg turns it off
-  cut_corner: 14px # clipped top-right corner on cards; 0px for square corners
+    raised: '8px 8px 0 #e8132b' # sheets and dialogs: a hard red shadow
+  skew: -10deg # slant of tags, badges, buttons and the selected item; 0deg turns it off
+  cut_corner: 18px # clipped top-right corner on cards; 0px for square corners
 
 # ── Motion ───────────────────────────────────────────────────────────────────
 motion:
@@ -127,9 +132,9 @@ motion:
 layout:
   max_width: 1180px
   density: comfortable # comfortable | compact
-  nav_desktop: sidebar # sidebar | top
-  nav_mobile: bottom # bottom | top
-  card_style: cut # flat | outlined | elevated | cut (Persona-style clipped corner)
+  card_style: cut # flat | outlined | elevated | cut (clipped corner)
+  texture: halftone # halftone | stripes | none (pattern behind the page)
+  sidebar: accent # accent (solid red slab) | surface
   dashboard_columns: 2 # columns of widgets on wide screens (1 to 4)
   # Order of dashboard widgets by extension id. Enabled extensions not listed
   # here are added after these, in the order config.yml lists them.
@@ -212,6 +217,7 @@ copy:
     spending: Spending this month
     other: Other
     no_spending: No spending logged this month.
+    coming_up: Coming up
   transactions:
     title: Activity
     empty: Nothing logged in this month.
@@ -290,11 +296,147 @@ copy:
     not_found: It no longer exists.
     unknown_currency: Pick a currency from the list.
     currency_locked: The currency is locked once the account has transactions.
+    recurring_cross_currency: A recurring transfer needs two accounts in the same currency.
+    invalid_rate: Enter a rate like 395.12.
     generic: Something went wrong. Try again.
   labels:
     backup: Backup
     drive: Drive folder
     rates: Exchange rates
+  recurring: # the Recurring page; placeholders in {braces} are filled in by the app
+    title: Recurring
+    subtitle: Rent, salary, subscriptions. The calling cards that come back every month.
+    new: New recurring item
+    edit: Edit recurring item
+    empty: Nothing recurring yet. Add rent, salary or a subscription and the forecast starts using it.
+    waiting: Waiting for you
+    waiting_hint: These came due. Check the amount, then confirm or skip.
+    confirm: Confirm
+    skip: Skip
+    next_due: Next
+    ended: Ended
+    paused: Paused
+    pause: Pause
+    resume: Resume
+    delete: Delete
+    delete_confirm: Delete this recurring item? Transactions it already made stay.
+    auto_post: Log it automatically
+    auto_post_hint: When it comes due it's logged without asking.
+    amount_varies: The amount changes
+    amount_varies_hint: You'll be asked for the real amount every time.
+    every: Every
+    unit_daily: day(s)
+    unit_weekly: week(s)
+    unit_monthly: month(s)
+    unit_yearly: year(s)
+    day_of_month: Day of the month
+    last_day: Last day
+    starts: First date
+    ends: Last date
+    per_month: a month
+    saved: Recurring item saved.
+    deleted: Recurring item deleted.
+    confirmed: Logged.
+    skipped: Skipped.
+    name_placeholder: Rent, Netflix, Salary…
+  budgets:
+    title: Budgets
+    subtitle: Spending limits per category. Cross one and you'll hear about it.
+    limit: Limit a month
+    spent: Spent
+    left: left
+    over_by: over
+    on_pace: On pace for
+    projected: by month end
+    empty: No budgets yet. Pick a spending category and give it a monthly limit.
+    add: Set budget
+    remove: Remove budget
+    saved: Budget saved.
+    removed: Budget removed.
+    pick_category: Category
+    month_total: All budgets
+  treasures: # savings goals
+    title: Treasures
+    subtitle: What you're saving up to steal.
+    new: New Treasure
+    edit: Edit Treasure
+    target: Target
+    saved: Saved
+    deadline: By
+    linked_account: Tied to account
+    not_linked: Not tied to an account
+    linked_hint: Tie it to a savings account and its balance counts automatically.
+    put_in: Put money in
+    put_in_hint: Records money set aside for this Treasure.
+    needed: Needed a month
+    eta: At this pace
+    reached: Secured!
+    late: Behind schedule
+    no_pace: Nothing put in recently
+    empty: No Treasures yet. Name something you want and how much it costs.
+    archive: Archive
+    restore: Restore
+    archived: Archived
+    saved_msg: Treasure saved.
+    contribution_saved: Added to the Treasure.
+  verdicts: # alerts; also sent to Discord when DISCORD_WEBHOOK_URL is set
+    title: Verdicts
+    none: Nothing needs you. Clean record.
+    budget_over: '{name} went over its budget.'
+    budget_warn: '{name} has used {percent} of its budget.'
+    budget_pace: '{name} is on pace to go over its budget.'
+    balance_floor: 'Your balance is projected to drop to {amount} on {date}.'
+    pending: '{count} recurring item(s) waiting for you to confirm.'
+    goal_late: '{name} is behind schedule.'
+    rates_failed: Exchange rates could not be fetched.
+    rates_stale: 'Exchange rates are {days} days old.'
+    backup: Your data isn't being saved to Drive.
+  projection:
+    title: Forecast
+    lowest: Lowest point
+    month_end: End of month
+    horizon_end: End of forecast
+    basis_average: Everyday spending from your last {months} month(s)
+    basis_fixed: Everyday spending set in config.yml
+    what_if: What if
+    what_if_hint: Try a one-off purchase without saving it.
+    what_if_amount: Amount
+    what_if_date: On
+    what_if_apply: Show it
+    what_if_clear: Clear
+    today: Today
+    balance_on: Balance on
+    range_1m: 1M
+    range_3m: 3M
+    range_all: All
+  reports:
+    title: Reports
+    subtitle: The full case file.
+    months_6: 6 months
+    months_12: 12 months
+    income_vs_spending: Income and spending
+    net_worth: Total over time
+    categories: Where it went
+    export: Export
+    export_csv: Download CSV
+    export_json: Download JSON
+    no_data: Nothing logged in this period.
+    average_month: Average month
+  rates:
+    title: Exchange rates
+    value: Rate
+    buy: Buy
+    sell: Sell
+    source: Source
+    as_of: As of
+    refresh: Fetch now
+    refreshed: Rates fetched.
+    manual: Set a rate by hand
+    manual_hint: Used until a fetched rate is newer.
+    saved: Rate saved.
+    none_needed: All accounts use the base currency, so no rates are needed.
+    never: Not fetched yet
+  more: More
   system: # the System page
     database: Database
     style: Look

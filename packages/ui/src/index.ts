@@ -16,3 +16,7 @@ export { default as Sheet } from './Sheet.svelte';
 export { default as Field } from './Field.svelte';
 export { default as Segmented } from './Segmented.svelte';
 export { default as Toast } from './Toast.svelte';
+export { default as LineChart } from './LineChart.svelte';
+export { default as BarChart } from './BarChart.svelte';
+export { default as Progress } from './Progress.svelte';
+export { default as DateTag } from './DateTag.svelte';

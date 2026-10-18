@@ -32,6 +32,7 @@ export const load: PageServerLoad = async ({ url }) => {
 
 	const { accounts, categories } = lookup(app);
 	const rows = listTransactions(db, {
+		status: 'posted',
 		from,
 		to,
 		accountId: filters.account || undefined,
