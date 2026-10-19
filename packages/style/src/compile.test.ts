@@ -101,7 +101,9 @@ describe('compileStyle', () => {
 
 	it('numbers the ransom fonts', () => {
 		const { css } = compile(defaults);
-		expect(css).toContain('--tr-font-ransom-3: "Abril Fatface", Georgia, serif;');
+		expect(css).toContain('--tr-font-ransom-1: Fraunces, Georgia, serif;');
+		expect(css).toContain('--tr-font-ransom-1-weight: 900;');
+		expect(css).toContain('--tr-font-ransom-3-scale: 1.06;');
 		expect(css).toContain('--tr-font-ransom-count: 6;');
 	});
 });

@@ -76,7 +76,7 @@
 		font-family: var(--font, inherit);
 		font-size: calc(1em * var(--scale));
 		font-style: normal;
-		font-weight: 400;
+		font-weight: var(--weight, 400);
 		line-height: 1;
 		text-transform: uppercase;
 		transform: translateY(var(--lift)) rotate(var(--turn));

@@ -37,6 +37,9 @@ What it does:
 - **Reports**: income and spending per month, total over time, where the money went, and CSV or
   JSON exports. A CSV of each month is also written to Drive every night.
 - `style.yml`: one file for every color, font, size, motion, layout choice and word.
+- **Command menu** (Menu button or Esc): a full-screen Persona 5 style menu. Put character art
+  in the Drive folder under `art/` and name it in `style.yml` (`assets → menu_art`), one image
+  for every command or one per command; until then a built-in stand-in picture shows.
 - Encrypted snapshots to Drive, restore-on-start, and overwrite protection.
 - `/api/summary` for the homepage and `/healthz` for the container health check.
 

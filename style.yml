@@ -72,20 +72,20 @@ colors:
 # ── Typography ───────────────────────────────────────────────────────────────
 typography:
   # Optional extra stylesheets to load fonts from (https only). Anton, Barlow Semi Condensed,
-  # Abril Fatface, Bowlby One, Ultra and Rammetto One ship with the app.
+  # Fraunces, League Spartan and Zilla Slab ship with the app.
   import: []
   font_body: '"Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif'
   font_heading: 'Anton, Impact, "Arial Black", sans-serif'
   font_numbers: '"Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif'
-  # Cut-out letters (page titles, the menu) pick from these in turn, like a ransom note.
-  # The first font also sets every word's first letter. All of these ship with the app.
+  # Cut-out letters (the command menu, page titles) are mixed from these, ransom-note style.
+  # The first also sets every word's first letter. All of them ship with the app.
   font_ransom:
-    - 'Ultra, "Abril Fatface", Georgia, serif'
-    - '"Bowlby One", Anton, sans-serif'
-    - '"Abril Fatface", Georgia, serif'
-    - '"Rammetto One", "Bowlby One", sans-serif'
-    - 'Ultra, Georgia, serif'
-    - '"Bowlby One", Anton, sans-serif'
+    - { font: 'Fraunces, Georgia, serif', weight: 900, scale: 1 }
+    - { font: '"League Spartan", "Arial Black", sans-serif', weight: 800, scale: 0.98 }
+    - { font: '"Zilla Slab", Rockwell, serif', weight: 700, scale: 1.06 }
+    - { font: 'Fraunces, Georgia, serif', weight: 900, scale: 1.02 }
+    - { font: 'Anton, Impact, sans-serif', weight: 400, scale: 1.1 }
+    - { font: '"League Spartan", "Arial Black", sans-serif', weight: 800, scale: 1.04 }
   base_size: 17px
   line_height: 1.45
   size:
@@ -190,15 +190,15 @@ copy:
     menu_flavor_2: money back
     confirm: Confirm
     move: Move
-  nav_hints: # the line under "Command" for the highlighted item
-    dashboard: See where everything stands
-    transactions: Go through every entry
-    accounts: Manage accounts and categories
-    recurring: Rent, salary and other regulars
+  nav_hints: # the short line under the big heading for the highlighted command
+    dashboard: See the big picture
+    transactions: Go through entries
+    accounts: Manage accounts
+    recurring: Handle the regulars
     budgets: Check the limits
     goals: Plan the next heist
-    reports: Open the case file
-    system: Backups, rates and settings
+    reports: Read the case file
+    system: Change settings
   terms:
     balance: Balance
     total: Total
@@ -511,6 +511,10 @@ copy:
 assets:
   favicon: /favicon.svg
   logo: null # path to an image in app/static, or null to show app_name as text
-  menu_art: # character art on the command menu; null shows the star pattern
-    default: null # e.g. /art/makoto.png (put the file in app/static/art)
-    commands: {} # a different image per command, e.g. budgets: /art/makoto-budgets.png
+  # Full-screen art behind the command menu, like the game's character poses (a 16:9 image
+  # works best, with the figure in the middle and the stars or background on the right).
+  # Put the files in the "art" folder of the Drive folder (Niijima-network/Treasure/art) and
+  # name them here as /art/<file>. null shows the built-in stand-in picture.
+  menu_art:
+    default: null # e.g. /art/makoto.png
+    commands: {} # one per command, e.g. budgets: /art/makoto-budgets.png

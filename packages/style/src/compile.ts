@@ -124,9 +124,10 @@ function toCss(style: Style): string {
 		[cssName('font', 'body'), type.font_body],
 		[cssName('font', 'heading'), type.font_heading],
 		[cssName('font', 'numbers'), type.font_numbers],
-		...type.font_ransom.map((value, index): [string, string] => [
-			cssName('font', 'ransom', String(index + 1)),
-			value
+		...type.font_ransom.flatMap((entry, index): [string, string | number][] => [
+			[cssName('font', 'ransom', String(index + 1)), entry.font],
+			[cssName('font', 'ransom', String(index + 1), 'weight'), entry.weight],
+			[cssName('font', 'ransom', String(index + 1), 'scale'), entry.scale]
 		]),
 		[cssName('font', 'ransom', 'count'), String(type.font_ransom.length)],
 		[cssName('font', 'size'), type.base_size],

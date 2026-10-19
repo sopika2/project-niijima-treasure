@@ -90,8 +90,20 @@ export const styleSchema = z.strictObject({
 		import: z.array(stylesheetUrl).max(4),
 		font_body: fontStack,
 		font_heading: fontStack,
-		/** Fonts the cut-out letters of titles and the menu are mixed from, in turn. */
-		font_ransom: z.array(fontStack).min(1).max(6),
+		/**
+		 * The fonts cut-out letters (the command menu, page titles) are mixed from. The first
+		 * one also sets every word's first letter. scale evens out fonts that run big or small.
+		 */
+		font_ransom: z
+			.array(
+				z.strictObject({
+					font: fontStack,
+					weight: z.number().int().min(100).max(1000).default(400),
+					scale: z.number().min(0.5).max(2).default(1)
+				})
+			)
+			.min(1)
+			.max(6),
 		font_numbers: fontStack,
 		base_size: length,
 		line_height: z.number().min(1).max(2.5),
@@ -511,8 +523,9 @@ export const styleSchema = z.strictObject({
 		favicon: asset,
 		logo: asset,
 		/**
-		 * Character art on the command menu: one image for every command, and optionally one per
-		 * command (keys as in copy.nav). Paths to images in app/static; null shows the star pattern.
+		 * Full-screen art behind the command menu: one image for every command, and optionally one
+		 * per command (keys as in copy.nav). /art/<file> is read from the art folder on Drive;
+		 * null shows the built-in stand-in picture.
 		 */
 		menu_art: z.strictObject({
 			default: asset,

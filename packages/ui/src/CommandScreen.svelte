@@ -1,16 +1,20 @@
 <script lang="ts">
 	/**
-	 * The Persona 5 command menu, full screen, laid out after the game's own screen:
-	 * the world behind blurred into dark red, op-art stars, a red slash, the commands stacked
-	 * tight and right-aligned as white sticker letters, the highlighted one bigger on a red
-	 * and cyan shard that never sits still. Around it: flavour strips and the "Menu: Main"
-	 * plate with a huge number in the top corner, the giant heading with a line describing
-	 * the command, the money counter, the party (your accounts) and the button hints.
-	 * Up/Down (or pointing) moves, Enter or a click goes there, Esc closes.
+	 * The Persona 5 command menu, laid out from the game's own screen (measured against a
+	 * 1214×681 capture). Layers, back to front:
+	 *
+	 *   the page, frozen and soaked in dark red (the game world behind the menu)
+	 *   the picture: character art from style.yml, or a stand-in that shifts per command
+	 *   the commands, tight and right-aligned as cut-out words on black paper, the highlighted
+	 *     one bigger with red and cyan shards behind it that never sit still
+	 *   flavour strips, the "Menu: Main" plate and a huge number in the top corner
+	 *   the giant heading with one line about the command, the money, the party, the hints
+	 *
+	 * Up/Down or pointing moves the cursor, Enter or a click goes there, Esc closes.
 	 */
-	import { onMount, tick } from 'svelte';
+	import { onMount } from 'svelte';
 	import Cutout from './Cutout.svelte';
-	import StarField from './StarField.svelte';
+	import MenuBackdrop from './MenuBackdrop.svelte';
 	import type { CommandWords, MenuArt, NavItem, PartyMember } from './types.ts';
 
 	interface Props {
@@ -32,9 +36,6 @@
 		)
 	);
 	let list = $state<HTMLUListElement | null>(null);
-	let cursor = $state({ x: 0, y: 0, w: 0, h: 0, ready: false });
-	let red = $state<SVGPolygonElement | null>(null);
-	let cyan = $state<SVGPolygonElement | null>(null);
 
 	const current = $derived(items[selected]);
 	const number = $derived(String(selected + 1).padStart(2, '0'));
@@ -42,30 +43,19 @@
 		(current?.key ? art?.commands[current.key] : undefined) ?? art?.default ?? null
 	);
 
-	/** Small hand-placed nudges so the right edge of the stack isn't ruler-straight. */
-	const nudge = [0.2, -0.4, 0, -0.7, -0.3, 0.1, -0.5, -0.1, -0.6];
-	const tilt = [-2, 1, -1, 2, 0, -2, 1, -1, 2];
-	const place = (index: number) =>
-		`--x:${nudge[index % nudge.length]}em;--r:${tilt[index % tilt.length]}deg;--n:${index}`;
-
-	/** Puts the cursor behind the highlighted line, from layout positions (not mid-animation boxes). */
-	function measure() {
-		const link = list?.querySelectorAll<HTMLElement>('a')[selected];
-		if (!link) return;
-		const line = link.parentElement as HTMLElement;
-		cursor = {
-			x: line.offsetLeft + link.offsetLeft,
-			y: line.offsetTop + link.offsetTop,
-			w: link.offsetWidth,
-			h: link.offsetHeight,
-			ready: true
-		};
-	}
-
-	$effect(() => {
-		void selected;
-		tick().then(measure);
+	/** The money split into the number and the currency, so the currency can be drawn big. */
+	const money = $derived.by(() => {
+		const match = wallet?.text.match(/^([^\d-]*)(-?[\d\s.,\u00a0\u202f]*\d)(.*)$/u);
+		return match
+			? { before: match[1]!.trim(), digits: match[2]!, after: match[3]!.trim() }
+			: { before: '', digits: wallet?.text ?? '', after: '' };
 	});
+
+	/** How far each line steps left of the stack's right edge, and its lean (from the game). */
+	const step = [-1.2, -2.6, -5, -5.6, -6.6, -7.4, -6.2, -5.9, -4.8];
+	const lean = [-2, 1, -1, 0, 1, -1, 1, 0, -1];
+	const place = (index: number) =>
+		`--dx:${step[index % step.length]};--r:${lean[index % lean.length]}deg;--n:${index}`;
 
 	function focusItem(index: number) {
 		selected = (index + items.length) % items.length;
@@ -83,69 +73,49 @@
 		event.stopPropagation();
 	}
 
-	/*
-	 * The cursor's two shards: a red slab under the word reaching out to the right, and a
-	 * cyan sliver along its top edge. Their corners drift a few times a second.
-	 */
-	const RED = [
-		[8, 30],
-		[100, 6],
-		[112, 88],
-		[0, 100]
-	];
-	const CYAN = [
-		[0, 12],
-		[96, 0],
-		[92, 26],
-		[4, 36]
-	];
+	/** The corners of the two cursor shards drift to a new spot a few times a second. */
+	function jitter(svg: SVGSVGElement) {
+		const html = document.documentElement;
+		if (html.dataset.motion === 'off' || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+			return;
+		}
+		const shapes = [...svg.querySelectorAll('polygon')].map((polygon) => ({
+			polygon,
+			base: (polygon.getAttribute('points') ?? '').split(' ').map((p) => p.split(',').map(Number))
+		}));
+		const wobble = (base: number[][]) =>
+			base.map(([x, y]) => [x! + (Math.random() * 2 - 1) * 4, y! + (Math.random() * 2 - 1) * 5]);
+		let from = shapes.map((shape) => shape.base);
+		let to = shapes.map((shape) => wobble(shape.base));
+		let start = performance.now();
+		let frame = requestAnimationFrame(function loop(now) {
+			let t = (now - start) / 240;
+			if (t >= 1) {
+				from = to;
+				to = shapes.map((shape) => wobble(shape.base));
+				start = now;
+				t = 0;
+			}
+			shapes.forEach((shape, i) => {
+				const points = from[i]!.map((p, k) => {
+					const q = to[i]![k]!;
+					return `${(p[0]! + (q[0]! - p[0]!) * t).toFixed(1)},${(p[1]! + (q[1]! - p[1]!) * t).toFixed(1)}`;
+				});
+				shape.polygon.setAttribute('points', points.join(' '));
+			});
+			frame = requestAnimationFrame(loop);
+		});
+		return {
+			destroy: () => cancelAnimationFrame(frame)
+		};
+	}
 
 	onMount(() => {
 		focusItem(selected);
-		const resize = () => measure();
-		window.addEventListener('resize', resize);
 		const html = document.documentElement;
 		const previous = html.style.overflow;
 		html.style.overflow = 'hidden';
-
-		const still =
-			html.dataset.motion === 'off' || matchMedia('(prefers-reduced-motion: reduce)').matches;
-		const draw = (polygon: SVGPolygonElement | null, points: number[][]) =>
-			polygon?.setAttribute('points', points.map((p) => p.join(',')).join(' '));
-		let frame = 0;
-		if (still) {
-			draw(red, RED);
-			draw(cyan, CYAN);
-		} else {
-			const jitter = (base: number[][], size: number) =>
-				base.map(([x, y]) => [
-					x! + (Math.random() * 2 - 1) * size,
-					y! + (Math.random() * 2 - 1) * size
-				]);
-			let from = [RED, CYAN];
-			let to = [jitter(RED, 4), jitter(CYAN, 3)];
-			let start = performance.now();
-			const PERIOD = 240;
-			const loop = (now: number) => {
-				let t = (now - start) / PERIOD;
-				if (t >= 1) {
-					from = to;
-					to = [jitter(RED, 4), jitter(CYAN, 3)];
-					start = now;
-					t = 0;
-				}
-				const mix = (a: number[][], b: number[][]) =>
-					a.map((p, i) => [p[0]! + (b[i]![0]! - p[0]!) * t, p[1]! + (b[i]![1]! - p[1]!) * t]);
-				draw(red, mix(from[0]!, to[0]!));
-				draw(cyan, mix(from[1]!, to[1]!));
-				frame = requestAnimationFrame(loop);
-			};
-			frame = requestAnimationFrame(loop);
-		}
-
 		return () => {
-			cancelAnimationFrame(frame);
-			window.removeEventListener('resize', resize);
 			html.style.overflow = previous;
 		};
 	});
@@ -159,41 +129,31 @@
 	tabindex="-1"
 	onkeydown={key}
 >
-	<div class="room" aria-hidden="true"></div>
-	<div class="field" aria-hidden="true"><StarField /></div>
+	<div class="world" aria-hidden="true"></div>
+
 	{#if artSrc}
 		{#key artSrc}
 			<img class="art" src={artSrc} alt="" />
 		{/key}
 	{:else}
-		<!-- Stand-in for the character until menu_art is set: a two-tone torn silhouette. -->
-		<div class="figure" aria-hidden="true"><span class="dots"></span></div>
+		<MenuBackdrop pose={selected} />
 	{/if}
-	<div class="slash" aria-hidden="true"></div>
 
-	<div class="flavor" aria-hidden="true">
-		<span class="strip one"><Cutout text={words.flavor[0]} salt={11} /></span>
-		<span class="strip two"><Cutout text={words.flavor[1]} salt={12} /></span>
-	</div>
-
+	<span class="strip dark" aria-hidden="true"
+		><Cutout text={words.flavor[0]} salt={11} variant="plain" /></span
+	>
+	<span class="strip light" aria-hidden="true"
+		><Cutout text={words.flavor[1]} salt={12} variant="plain" /></span
+	>
 	<div class="plate" aria-hidden="true">
-		<span class="plate-title"><Cutout text={words.plate.title} salt={3} /></span>
-		<span class="plate-hint"><Cutout text={words.plate.hint} salt={4} /></span>
+		<span class="plate-title"><Cutout text={words.plate.title} salt={3} variant="plain" /></span>
+		<span class="plate-hint"><Cutout text={words.plate.hint} salt={4} variant="plain" /></span>
 	</div>
-	<span class="number" aria-hidden="true">{number}</span>
+	{#key selected}
+		<span class="number" aria-hidden="true">{number}</span>
+	{/key}
 
 	<nav class="commands" aria-label={words.heading}>
-		<span
-			class="cursor"
-			class:ready={cursor.ready}
-			style="--cx:{cursor.x}px;--cy:{cursor.y}px;--cw:{cursor.w}px;--ch:{cursor.h}px"
-			aria-hidden="true"
-		>
-			<svg viewBox="0 0 112 100" preserveAspectRatio="none">
-				<polygon class="shard-red" bind:this={red} />
-				<polygon class="shard-cyan" bind:this={cyan} />
-			</svg>
-		</span>
 		<ul bind:this={list}>
 			{#each items as item, index (item.href)}
 				<li style={place(index)} class:on={index === selected}>
@@ -206,31 +166,45 @@
 						onfocus={() => (selected = index)}
 						onclick={() => onclose()}
 					>
-						<span class="word"><Cutout text={item.label} salt={index} /></span>
+						{#if index === selected}
+							<svg
+								class="shards"
+								viewBox="0 0 100 100"
+								preserveAspectRatio="none"
+								aria-hidden="true"
+								use:jitter
+							>
+								<polygon class="red" points="2,58 58,40 104,22 100,96 8,104" />
+								<polygon class="cyan" points="-2,8 70,0 66,22 2,30" />
+							</svg>
+						{/if}
+						<Cutout text={item.label} salt={index} />
 					</a>
 				</li>
 			{/each}
 		</ul>
 	</nav>
 
-	<div class="caption">
-		<span class="heading"><Cutout text={words.heading} salt={9} /></span>
-		{#key selected}
-			<p class="hint" id="command-hint">{current?.hint ?? current?.label}</p>
-		{/key}
-	</div>
+	<span class="heading" aria-hidden="true"
+		><Cutout text={words.heading} salt={9} variant="heading" /></span
+	>
+	{#key selected}
+		<p class="hint" id="command-hint">{current?.hint ?? current?.label}</p>
+	{/key}
 
 	{#if wallet}
 		<p class="wallet" aria-label="{wallet.label}: {wallet.text}">
-			<span aria-hidden="true">{wallet.text}</span>
+			{#if money.before}<b aria-hidden="true">{money.before}</b>{/if}<span aria-hidden="true"
+				>{money.digits}</span
+			>{#if money.after}<b aria-hidden="true">{money.after}</b>{/if}
 		</p>
 	{/if}
 
 	{#if party.length > 0}
 		<ul class="party" aria-hidden="true">
 			{#each party.slice(0, 4) as member, i (i)}
-				<li style="--share:{Math.max(0.04, Math.min(1, member.share))};--n:{i}">
-					<span class="member"><Cutout text={member.name.slice(0, 2)} salt={20 + i} /></span>
+				<li style="--share:{Math.max(0.03, Math.min(1, member.share))};--n:{i}">
+					<span class="face"><Cutout text={member.name.slice(0, 2)} salt={20 + i} /></span>
 					<span class="bar"><span></span></span>
 				</li>
 			{/each}
@@ -238,11 +212,9 @@
 	{/if}
 
 	<div class="keys">
-		<span class="key-hint" aria-hidden="true"><kbd>↑↓</kbd>{words.move}</span>
-		<span class="key-hint" aria-hidden="true"><kbd>⏎</kbd>{words.confirm}</span>
-		<button type="button" class="key-hint close" onclick={onclose}
-			><kbd>Esc</kbd>{words.close}</button
-		>
+		<span class="key" aria-hidden="true"><kbd>↑↓</kbd>{words.move}</span>
+		<span class="key" aria-hidden="true"><kbd>⏎</kbd>{words.confirm}</span>
+		<button type="button" class="key close" onclick={onclose}><kbd>Esc</kbd>{words.close}</button>
 	</div>
 </div>
 
@@ -256,296 +228,243 @@
 		outline: none;
 	}
 
-	/* The world behind, blurred and drowned in dark red, like the paused game. */
-	.room {
+	/* The page behind, frozen and drowned in dark red, like the game world behind its menu. */
+	.world {
 		position: absolute;
 		inset: 0;
 		background: color-mix(
 			in srgb,
-			color-mix(in srgb, var(--tr-color-accent) 68%, var(--tr-color-ink)) 92%,
+			color-mix(in srgb, var(--tr-color-accent) 58%, var(--tr-color-ink)) 88%,
 			transparent
 		);
-		backdrop-filter: blur(5px) grayscale(1) brightness(0.5);
+		backdrop-filter: blur(4px) grayscale(1) brightness(0.55);
 		animation: fade var(--tr-duration-fast) linear both;
-	}
-
-	/* Op-art stars from a third of the way across, torn along the left edge. */
-	.field {
-		position: absolute;
-		inset: 0 0 0 30vw;
-		clip-path: polygon(22% 0, 100% 0, 100% 100%, 0 100%, 10% 78%, 3% 70%, 14% 44%, 8% 30%);
-		animation: slide-in var(--tr-duration-normal) var(--tr-ease-emphasized) both;
-	}
-
-	/* The big red slash behind the list. */
-	.slash {
-		position: absolute;
-		inset: 0;
-		background: var(--tr-color-accent);
-		clip-path: polygon(52vw 17vh, 72vw 13vh, 58vw 47vh, 70vw 58vh, 47vw 72vh, 53vw 52vh, 46vw 44vh);
-		animation: slash var(--tr-duration-normal) var(--tr-ease-emphasized) 60ms both;
-	}
-
-	/* Where the character goes: white paper torn into a tall shape, its right side in black
-	   (the game splits its figures the same way), with a patch of halftone dots. */
-	.figure {
-		position: absolute;
-		top: 6vh;
-		left: 27vw;
-		width: 42vw;
-		height: 94vh;
-		background: linear-gradient(118deg, var(--tr-color-paper) 0 47%, var(--tr-color-ink) 47% 100%);
-		clip-path: polygon(
-			18% 14%,
-			24% 0,
-			31% 12%,
-			40% 2%,
-			46% 14%,
-			57% 6%,
-			60% 20%,
-			74% 12%,
-			78% 30%,
-			92% 36%,
-			86% 52%,
-			100% 70%,
-			96% 100%,
-			8% 100%,
-			0 76%,
-			10% 58%,
-			4% 40%,
-			14% 30%
-		);
-		filter: drop-shadow(0 0 0 var(--tr-color-ink));
-		animation: pose var(--tr-duration-normal) var(--tr-ease-emphasized) both;
-	}
-	.dots {
-		position: absolute;
-		top: 8%;
-		left: 52%;
-		width: 34%;
-		height: 30%;
-		background: radial-gradient(circle, var(--tr-color-paper) 1.8px, transparent 2.1px) 0 0 / 9px
-			9px;
-		clip-path: polygon(10% 0, 100% 14%, 86% 100%, 0 80%);
 	}
 	.art {
 		position: absolute;
-		bottom: 0;
-		left: 30vw;
-		height: 100vh;
-		max-width: 55vw;
-		object-fit: contain;
-		object-position: bottom;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		object-position: 30% 50%;
 		pointer-events: none;
 		animation: pose var(--tr-duration-normal) var(--tr-ease-emphasized) both;
 	}
 
-	/* ── Top corner: flavour strips, "Menu: Main", the number ──────────────── */
+	/* ── Top corner ────────────────────────────────────────────────────────── */
 	.strip {
 		position: absolute;
-		padding: 0.12em 0.4em 0.18em;
-		background: var(--tr-color-ink);
-		border: 3px solid var(--tr-color-paper);
-		font-size: 4.6vh;
-		animation: drop var(--tr-duration-normal) var(--tr-ease-emphasized) both;
+		padding: 0.05em 0.3em 0.12em;
+		font-size: 5.2vh;
+		outline-width: 0.06em;
+		outline-style: solid;
+		outline-offset: -0.14em;
+		animation: drop var(--tr-duration-normal) var(--tr-ease-emphasized) backwards;
 	}
-	.strip.one {
-		top: 1.5vh;
-		left: 66vw;
-		transform: rotate(-8deg);
+	.strip.dark {
+		top: -1.5vh;
+		left: 66.5vw;
+		background: var(--tr-color-ink);
+		color: var(--tr-color-paper);
+		outline-color: var(--tr-color-paper);
+		transform: rotate(-9deg);
 		animation-delay: 60ms;
 	}
-	.strip.two {
-		top: 13vh;
-		left: 73vw;
-		transform: rotate(-5deg);
+	.strip.light {
+		top: 14.5vh;
+		left: 72.5vw;
+		background: var(--tr-color-paper);
+		color: var(--tr-color-ink);
+		outline-color: var(--tr-color-ink);
+		transform: rotate(-3deg);
 		animation-delay: 100ms;
 	}
 	.plate {
 		position: absolute;
-		top: 27vh;
-		left: 79vw;
+		top: 24.5vh;
+		left: 78vw;
 		display: grid;
 		justify-items: center;
-		padding: 0.5vh 1.2vh 0.8vh;
+		padding: 0.6vh 1.6vh 1vh;
 		background: var(--tr-color-ink);
-		border: 3px solid var(--tr-color-paper);
-		box-shadow: 0 0 0 3px var(--tr-color-ink);
-		transform: rotate(-4deg);
-		animation: drop var(--tr-duration-normal) var(--tr-ease-emphasized) 140ms both;
+		color: var(--tr-color-paper);
+		outline: 2px solid var(--tr-color-paper);
+		outline-offset: -6px;
+		transform: rotate(-5deg);
+		animation: drop var(--tr-duration-normal) var(--tr-ease-emphasized) 140ms backwards;
 	}
 	.plate-title {
-		font-size: 4.8vh;
+		font-size: 5vh;
 	}
 	.plate-hint {
-		font-size: 2vh;
+		margin-top: 0.3vh;
+		font-size: 2.1vh;
 	}
 	.number {
 		position: absolute;
-		top: 37vh;
+		top: 33vh;
 		left: 76vw;
 		color: var(--tr-color-paper);
-		font-family: var(--tr-font-ransom-2, var(--tr-font-heading));
-		font-size: 25vh;
+		font-family: var(--tr-font-ransom-1);
+		font-size: 22vh;
+		font-weight: var(--tr-font-ransom-1-weight);
 		line-height: 1;
-		-webkit-text-stroke: 0.06em var(--tr-color-ink);
+		-webkit-text-stroke: 0.04em var(--tr-color-ink);
 		paint-order: stroke fill;
-		filter: drop-shadow(0.04em 0.05em 0 var(--tr-color-ink));
-		transform: rotate(-7deg);
-		animation: drop var(--tr-duration-normal) var(--tr-ease-emphasized) 180ms both;
+		filter: drop-shadow(0.03em 0.04em 0 var(--tr-color-ink));
+		transform: rotate(-6deg) scale(0.72, 1.25);
+		transform-origin: left top;
+		animation: number var(--tr-duration-fast) var(--tr-ease-emphasized) backwards;
 	}
 
-	/* ── The commands: a tight, right-aligned stack ────────────────────────── */
+	/* ── The commands ─────────────────────────────────────────────────────── */
 	.commands {
 		position: absolute;
-		top: 25vh;
-		right: 44vw;
-		font-size: max(1.4rem, 4.7vh);
+		top: 26vh;
+		left: 0;
+		width: 56vw;
+		font-size: 4.9vh;
 	}
 	ul {
-		position: relative;
-		display: grid;
-		justify-items: end;
 		margin: 0;
 		padding: 0;
 		list-style: none;
 	}
 	.commands li {
-		position: relative;
-		z-index: 1;
-		line-height: 1.12;
-		transform: translateX(var(--x)) rotate(var(--r));
+		height: 5.5vh;
+		text-align: right;
+		transform: translateX(calc(var(--dx) * 1vw)) rotate(var(--r));
 		transform-origin: right center;
-		animation: deal var(--tr-duration-normal) var(--tr-ease-emphasized) both;
+		transition: height var(--tr-duration-fast) var(--tr-ease-standard);
+		animation: deal var(--tr-duration-normal) var(--tr-ease-emphasized) backwards;
 		animation-delay: calc(40ms + var(--n) * 30ms);
 	}
+	.commands li.on {
+		height: 7.4vh;
+	}
 	a {
+		position: relative;
 		display: inline-block;
 		color: inherit;
 		text-decoration: none;
 		outline: none;
-	}
-	.word {
-		display: inline-block;
 		transform-origin: right center;
 		transition: transform var(--tr-duration-normal) var(--tr-ease-emphasized);
 	}
-	li.on {
-		z-index: 2;
+	li.on a {
+		z-index: 3;
+		transform: scale(1.3) translate(0.15em, 0.12em) rotate(-1deg);
 	}
-	li.on .word {
-		transform: scale(1.36) translateX(0.12em) rotate(-2deg);
+	/* The highlighted command's letters take a faint tint of the cursor. */
+	li.on a :global(.l) {
+		color: color-mix(in srgb, var(--tr-color-paper) 88%, var(--tr-color-cursor));
 	}
-
-	.cursor {
+	.shards {
 		position: absolute;
-		z-index: 0;
-		top: 0;
-		left: 0;
-		width: calc(var(--cw) * 1.62);
-		height: calc(var(--ch) * 1.5);
-		opacity: 0;
-		transform: translate(calc(var(--cx) - var(--cw) * 0.46), calc(var(--cy) - var(--ch) * 0.22))
-			rotate(-3deg);
-		transition:
-			transform var(--tr-duration-normal) var(--tr-ease-emphasized),
-			width var(--tr-duration-normal) var(--tr-ease-emphasized),
-			height var(--tr-duration-normal) var(--tr-ease-emphasized);
+		z-index: -2;
+		inset: -0.22em -0.45em -0.2em -0.25em;
+		width: calc(100% + 0.7em);
+		height: calc(100% + 0.42em);
+		overflow: visible;
+		transform-origin: left center;
+		animation: shard var(--tr-duration-fast) var(--tr-ease-emphasized) backwards;
 		pointer-events: none;
 	}
-	.cursor.ready {
-		opacity: 1;
-	}
-	.cursor svg {
-		display: block;
-		width: 100%;
-		height: 100%;
-		overflow: visible;
-	}
-	.shard-red {
+	.shards .red {
 		fill: var(--tr-color-accent);
-		stroke: var(--tr-color-ink);
-		stroke-width: 1.5;
-		vector-effect: non-scaling-stroke;
 	}
-	.shard-cyan {
+	.shards .cyan {
 		fill: var(--tr-color-cursor);
 	}
 
 	/* ── The heading and the line under it ────────────────────────────────── */
-	.caption {
-		position: absolute;
-		top: 71vh;
-		left: 42vw;
-		display: grid;
-		justify-items: center;
-		transform: rotate(-2deg);
-		animation: drop var(--tr-duration-normal) var(--tr-ease-emphasized) 120ms both;
-	}
 	.heading {
-		font-size: 12vh;
-		line-height: 1;
+		position: absolute;
+		top: 70vh;
+		left: 43vw;
+		font-size: 9vh;
+		transform: rotate(-3deg);
+		transform-origin: left bottom;
+		animation: drop var(--tr-duration-normal) var(--tr-ease-emphasized) 120ms backwards;
 	}
 	.hint {
-		margin: -0.6vh 1vw 0 0;
-		color: var(--tr-color-paper);
-		font-family: var(--tr-font-heading);
-		font-size: 2.4vh;
-		font-style: italic;
-		-webkit-text-stroke: 0.22em var(--tr-color-ink);
-		paint-order: stroke fill;
-		animation: hint var(--tr-duration-fast) var(--tr-ease-standard) both;
-	}
-
-	/* ── The money counter ─────────────────────────────────────────────────── */
-	.wallet {
 		position: absolute;
-		top: 81vh;
-		left: 24vw;
+		top: 84.6vh;
+		left: 59.2vw;
 		margin: 0;
 		color: var(--tr-color-paper);
-		font-family: var(--tr-font-heading);
-		font-size: 5.4vh;
+		font-family: var(--tr-font-body);
+		font-size: 3vh;
 		font-style: italic;
-		line-height: 1;
-		-webkit-text-stroke: 0.16em var(--tr-color-ink);
+		font-weight: var(--tr-weight-bold);
+		-webkit-text-stroke: 0.18em var(--tr-color-ink);
 		paint-order: stroke fill;
-		transform: rotate(-4deg);
-		animation: drop var(--tr-duration-normal) var(--tr-ease-emphasized) 160ms both;
+		transform: rotate(-5deg);
+		animation: hint var(--tr-duration-fast) var(--tr-ease-standard) backwards;
 	}
 
-	/* ── The party: your accounts with their share of the total ───────────── */
+	/* ── Money ────────────────────────────────────────────────────────────── */
+	.wallet {
+		position: absolute;
+		top: 80vh;
+		left: 26.5vw;
+		display: flex;
+		align-items: baseline;
+		gap: 0.3em;
+		margin: 0;
+		color: var(--tr-color-paper);
+		-webkit-text-stroke: 0.14em var(--tr-color-ink);
+		paint-order: stroke fill;
+		transform: rotate(-6deg);
+		animation: drop var(--tr-duration-normal) var(--tr-ease-emphasized) 160ms backwards;
+	}
+	.wallet span {
+		font-family: var(--tr-font-body);
+		font-size: 5.6vh;
+		font-style: italic;
+		font-weight: var(--tr-weight-bold);
+		letter-spacing: -0.02em;
+	}
+	.wallet b {
+		font-family: var(--tr-font-ransom-2, var(--tr-font-heading));
+		font-size: 7vh;
+		font-weight: var(--tr-font-ransom-2-weight, 400);
+	}
+
+	/* ── The party (your accounts) and the button hints ───────────────────── */
 	.party {
 		position: absolute;
-		right: 2vw;
-		bottom: 8vh;
+		top: 79vh;
+		left: 73.5vw;
 		display: flex;
-		gap: 0.8vw;
+		gap: 0.6vw;
 		margin: 0;
 		padding: 0;
 		list-style: none;
 	}
 	.party li {
 		display: grid;
-		justify-items: start;
-		gap: 0.6vh;
-		width: 4.6vw;
-		min-width: 4rem;
-		padding: 0.8vh 0.6vw 1vh;
-		background: var(--tr-color-ink);
-		border: 2px solid var(--tr-color-paper);
-		transform: rotate(-6deg) skewX(var(--tr-skew));
-		animation: drop var(--tr-duration-normal) var(--tr-ease-emphasized) both;
+		gap: 0.5vh;
+		width: 5.6vw;
+		min-width: 3.5rem;
+		transform: rotate(-8deg);
+		animation: drop var(--tr-duration-normal) var(--tr-ease-emphasized) backwards;
 		animation-delay: calc(200ms + var(--n) * 40ms);
 	}
-	.member {
+	.face {
+		display: grid;
+		place-items: center;
+		height: 7.5vh;
+		background: var(--tr-color-ink);
+		border: 2px solid var(--tr-color-paper);
 		font-size: 3.4vh;
+		clip-path: polygon(10% 18%, 40% 0, 70% 6%, 100% 30%, 92% 100%, 0 92%);
 	}
 	.bar {
-		width: 100%;
-		height: 0.8vh;
-		min-height: 5px;
+		height: 0.75vh;
+		min-height: 4px;
 		background: var(--tr-color-surface-raised);
+		transform: skewX(-30deg);
 	}
 	.bar span {
 		display: block;
@@ -553,30 +472,26 @@
 		height: 100%;
 		background: var(--tr-color-cursor);
 	}
-
-	/* ── Button hints ──────────────────────────────────────────────────────── */
 	.keys {
 		position: absolute;
-		right: 2vw;
-		bottom: 2vh;
+		top: 92.5vh;
+		right: 3vw;
 		display: flex;
-		flex-wrap: wrap;
-		justify-content: end;
-		gap: 0.4rem 1.1rem;
+		gap: 1.2vw;
 	}
-	.key-hint {
+	.key {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.35rem;
+		gap: 0.25em;
 		padding: 0;
 		border: 0;
 		background: none;
 		color: var(--tr-color-paper);
-		font: inherit;
-		font-family: var(--tr-font-heading);
-		font-size: max(0.95rem, 2.4vh);
+		font-family: var(--tr-font-body);
+		font-size: max(0.95rem, 3vh);
 		font-style: italic;
-		-webkit-text-stroke: 0.2em var(--tr-color-ink);
+		font-weight: var(--tr-weight-bold);
+		-webkit-text-stroke: 0.16em var(--tr-color-ink);
 		paint-order: stroke fill;
 	}
 	.close {
@@ -585,83 +500,79 @@
 	kbd {
 		display: inline-grid;
 		place-items: center;
-		min-width: 1.8em;
-		height: 1.8em;
-		padding: 0 0.35em;
+		min-width: 1.25em;
+		height: 1.25em;
+		padding: 0 0.2em;
 		border-radius: 999px;
 		background: var(--tr-color-paper);
 		color: var(--tr-color-ink);
 		font-family: var(--tr-font-body);
 		font-size: 0.7em;
 		font-style: normal;
-		font-weight: var(--tr-weight-bold);
 		-webkit-text-stroke: 0;
-		box-shadow: 0 0 0 2px var(--tr-color-ink);
+		box-shadow: 0 0 0 0.1em var(--tr-color-ink);
 	}
 
 	/* ── Tall screens (phones) ─────────────────────────────────────────────── */
 	@media (max-aspect-ratio: 4/5) {
-		.field {
-			inset: 0 0 0 38vw;
-		}
-		.figure {
-			left: 6vw;
-			width: 80vw;
-			top: 12vh;
-			height: 70vh;
-		}
-		.slash {
-			clip-path: polygon(
-				55vw 20vh,
-				90vw 16vh,
-				66vw 45vh,
-				86vw 54vh,
-				50vw 70vh,
-				60vw 50vh,
-				48vw 42vh
-			);
-		}
 		.commands {
-			top: 22vh;
-			right: 10vw;
-			font-size: min(3.4vh, 7.5vw);
+			top: 17vh;
+			width: 90vw;
+			font-size: min(4vh, 8vw);
 		}
-		li.on .word {
-			transform: scale(1.18) translateX(0.08em) rotate(-2deg);
+		.commands li {
+			height: 4.6vh;
+			transform: translateX(calc(var(--dx) * 0.6vw)) rotate(var(--r));
 		}
-		.flavor,
+		.commands li.on {
+			height: 6.2vh;
+		}
+		li.on a {
+			transform: scale(1.18) translate(0.1em, 0.08em) rotate(-1deg);
+		}
+		.strip,
 		.number,
 		.party,
-		.keys .key-hint:not(.close) {
+		.keys .key:not(.close) {
 			display: none;
 		}
 		.plate {
-			top: 9vh;
+			top: 2vh;
 			left: auto;
 			right: 4vw;
 		}
 		.plate-title {
-			font-size: 3.4vh;
+			font-size: 3.2vh;
 		}
 		.plate-hint {
 			font-size: 1.5vh;
 		}
-		.caption {
-			top: auto;
-			bottom: 10vh;
-			left: auto;
-			right: 4vw;
-		}
 		.heading {
-			font-size: min(7.5vh, 15vw);
+			top: auto;
+			bottom: 13vh;
+			left: 5vw;
+			font-size: min(6.5vh, 12vw);
 		}
 		.hint {
-			font-size: 2.2vh;
+			top: auto;
+			bottom: 8vh;
+			left: auto;
+			right: 6vw;
+			font-size: 2.3vh;
 		}
 		.wallet {
-			top: 2.5vh;
-			left: 4vw;
-			font-size: min(4.2vh, 8vw);
+			top: 3vh;
+			left: 5vw;
+		}
+		.wallet span {
+			font-size: 3.6vh;
+		}
+		.wallet b {
+			font-size: 4.4vh;
+		}
+		.keys {
+			top: auto;
+			bottom: 2.5vh;
 		}
 		.close {
 			font-size: 1.2rem;
@@ -673,15 +584,10 @@
 			opacity: 0;
 		}
 	}
-	@keyframes slide-in {
-		from {
-			transform: translateX(50%);
-		}
-	}
-	@keyframes slash {
+	@keyframes pose {
 		from {
 			opacity: 0;
-			transform: scale(1.4) rotate(-10deg);
+			transform: translateX(-4%) scale(1.04);
 		}
 	}
 	@keyframes deal {
@@ -696,16 +602,21 @@
 			transform: translateY(-30%) rotate(-14deg) scale(1.3);
 		}
 	}
+	@keyframes number {
+		from {
+			opacity: 0;
+			transform: rotate(-16deg) scale(0.9, 1.6);
+		}
+	}
+	@keyframes shard {
+		from {
+			transform: scaleX(0.1);
+		}
+	}
 	@keyframes hint {
 		from {
 			opacity: 0;
-			transform: translateX(1rem);
-		}
-	}
-	@keyframes pose {
-		from {
-			opacity: 0;
-			transform: translateX(-3%) scale(1.03);
+			transform: translateX(1rem) rotate(-5deg);
 		}
 	}
 </style>
