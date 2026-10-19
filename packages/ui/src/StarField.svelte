@@ -28,24 +28,26 @@
 		};
 	}
 
-	const tones = ['ink', 'paper', 'grey', 'paper'] as const;
+	/* Thin alternating black and white bands, with the odd grey one, like the game's op-art stars. */
+	const tones = ['ink', 'paper', 'paper', 'ink', 'grey', 'paper', 'ink', 'paper'] as const;
 
 	const stars = $derived.by(() => {
 		const next = random(seed);
 		// A few big stars first (drawn underneath), then smaller ones on top.
 		const list = [
-			{ x: 640, y: 420, r: 560 },
-			{ x: 180, y: 900, r: 420 },
-			...Array.from({ length: 7 }, () => ({
+			{ x: 700, y: 380, r: 620 },
+			{ x: 150, y: 950, r: 460 },
+			{ x: 980, y: 980, r: 380 },
+			...Array.from({ length: 6 }, () => ({
 				x: next() * 1000,
 				y: next() * 1000,
-				r: 120 + next() * 260
+				r: 110 + next() * 220
 			}))
 		];
 		return list.map((star) => {
 			const turn = next() * 72;
-			const rings = Math.max(3, Math.round(star.r / 45));
-			const offset = Math.floor(next() * 4);
+			const rings = Math.max(5, Math.round(star.r / 16));
+			const offset = Math.floor(next() * tones.length);
 			return Array.from({ length: rings }, (_, ring) => ({
 				points: starPoints(star.x, star.y, star.r * (1 - ring / rings), turn),
 				tone: tones[(ring + offset) % tones.length]!
@@ -70,7 +72,7 @@
 	}
 	polygon {
 		stroke: var(--tr-color-ink);
-		stroke-width: 3;
+		stroke-width: 2;
 		stroke-linejoin: miter;
 	}
 	[data-tone='ink'] {

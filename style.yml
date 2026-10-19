@@ -72,18 +72,20 @@ colors:
 # ── Typography ───────────────────────────────────────────────────────────────
 typography:
   # Optional extra stylesheets to load fonts from (https only). Anton, Barlow Semi Condensed,
-  # Abril Fatface and Bowlby One ship with the app, so they work with nothing here.
+  # Abril Fatface, Bowlby One, Ultra and Rammetto One ship with the app.
   import: []
   font_body: '"Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif'
   font_heading: 'Anton, Impact, "Arial Black", sans-serif'
   font_numbers: '"Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif'
   # Cut-out letters (page titles, the menu) pick from these in turn, like a ransom note.
-  # Abril Fatface and Bowlby One ship with the app too.
+  # The first font also sets every word's first letter. All of these ship with the app.
   font_ransom:
-    - 'Anton, Impact, sans-serif'
-    - '"Abril Fatface", Georgia, serif'
+    - 'Ultra, "Abril Fatface", Georgia, serif'
     - '"Bowlby One", Anton, sans-serif'
-    - '"Barlow Semi Condensed", "Arial Narrow", sans-serif'
+    - '"Abril Fatface", Georgia, serif'
+    - '"Rammetto One", "Bowlby One", sans-serif'
+    - 'Ultra, Georgia, serif'
+    - '"Bowlby One", Anton, sans-serif'
   base_size: 17px
   line_height: 1.45
   size:
@@ -184,6 +186,8 @@ copy:
     menu_title: 'Menu: Main' # the little plate on the command menu
     menu_hint: Select a command
     menu_heading: Command # the big word at the bottom of the command menu
+    menu_flavor_1: Take your # two strips of flavour text in the menu's top corner
+    menu_flavor_2: money back
     confirm: Confirm
     move: Move
   nav_hints: # the line under "Command" for the highlighted item

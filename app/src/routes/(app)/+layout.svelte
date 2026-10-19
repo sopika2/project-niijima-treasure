@@ -120,9 +120,11 @@
 		plate: { title: copy.nav.menu_title, hint: copy.nav.menu_hint },
 		close: copy.actions.close,
 		confirm: copy.nav.confirm,
-		move: copy.nav.move
+		move: copy.nav.move,
+		flavor: [copy.nav.menu_flavor_1, copy.nav.menu_flavor_2]
 	}}
 	{wallet}
+	party={data.party}
 	art={page.data.menuArt}
 	action={{ label: copy.actions.quick_add, onclick: openAdd }}
 	banner={data.problems.length > 0 ? problems : undefined}

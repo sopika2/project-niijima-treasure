@@ -9,7 +9,7 @@
 	import Cutout from './Cutout.svelte';
 	import Icon from './Icon.svelte';
 	import Title from './Title.svelte';
-	import type { CommandWords, MenuArt, NavItem } from './types.ts';
+	import type { CommandWords, MenuArt, NavItem, PartyMember } from './types.ts';
 
 	interface Props {
 		appName: string;
@@ -24,6 +24,8 @@
 		banner?: Snippet;
 		/** The money counter on the command menu. */
 		wallet?: { label: string; text: string } | null;
+		/** Accounts shown like the party on the command menu. */
+		party?: readonly PartyMember[];
 		art?: MenuArt | null;
 		children: Snippet;
 	}
@@ -37,6 +39,7 @@
 		action,
 		banner,
 		wallet = null,
+		party = [],
 		art = null,
 		children
 	}: Props = $props();
@@ -133,7 +136,7 @@
 </div>
 
 {#if open}
-	<CommandScreen items={nav} {words} {wallet} {art} onclose={close} />
+	<CommandScreen items={nav} {words} {wallet} {party} {art} onclose={close} />
 {/if}
 
 <style>

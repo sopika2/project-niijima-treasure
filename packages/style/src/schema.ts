@@ -175,6 +175,8 @@ export const styleSchema = z.strictObject({
 			'menu_title',
 			'menu_hint',
 			'menu_heading',
+			'menu_flavor_1',
+			'menu_flavor_2',
 			'confirm',
 			'move'
 		),

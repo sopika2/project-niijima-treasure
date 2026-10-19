@@ -101,7 +101,7 @@ describe('compileStyle', () => {
 
 	it('numbers the ransom fonts', () => {
 		const { css } = compile(defaults);
-		expect(css).toContain('--tr-font-ransom-2: "Abril Fatface", Georgia, serif;');
-		expect(css).toContain('--tr-font-ransom-count: 4;');
+		expect(css).toContain('--tr-font-ransom-3: "Abril Fatface", Georgia, serif;');
+		expect(css).toContain('--tr-font-ransom-count: 6;');
 	});
 });

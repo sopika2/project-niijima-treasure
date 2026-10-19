@@ -23,4 +23,4 @@ export { default as DateTag } from './DateTag.svelte';
 export { default as Cutout } from './Cutout.svelte';
 export { default as StarField } from './StarField.svelte';
 export { default as CommandScreen } from './CommandScreen.svelte';
-export type { CommandWords, MenuArt } from './types.ts';
+export type { CommandWords, MenuArt, PartyMember } from './types.ts';

@@ -22,10 +22,10 @@ export function ransom(text: string, salt = 0): Letter[] {
 		const first = index === 0;
 		const font = first ? 1 : (seed % 6) + 1;
 		const fallback = font === 1 ? '' : ', var(--tr-font-ransom-1)';
-		const scale = first ? 1.28 : 0.8 + (seed % 5) * 0.09;
+		const scale = first ? 1.3 : 0.84 + (seed % 5) * 0.07;
 		const lift = ((seed % 7) - 3) * 0.04;
-		const turn = ((seed % 9) - 4) * 1.6;
-		const lower = !first && seed % 4 === 1 && /\p{L}/u.test(char);
+		const turn = ((seed % 9) - 4) * 1.1;
+		const lower = !first && seed % 5 === 1 && /\p{L}/u.test(char);
 		return {
 			char,
 			lower,
