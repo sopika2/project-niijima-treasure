@@ -224,6 +224,7 @@ export function htmlAttributes(style: Style): Record<string, string> {
 		'data-scheme': style.colors.scheme,
 		'data-title': style.typography.title_style,
 		'data-texture': style.layout.texture,
+		'data-navigation': style.layout.navigation,
 		'data-sidebar': style.layout.sidebar,
 		'data-transition': style.layout.page_transition,
 		'data-card': style.layout.card_style,

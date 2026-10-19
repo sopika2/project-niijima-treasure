@@ -94,7 +94,7 @@ describe('compileStyle', () => {
 			'data-scheme': 'dark',
 			'data-card': 'cut',
 			'data-title': 'ransom',
-			'data-sidebar': 'persona',
+			'data-navigation': 'command',
 			'data-transition': 'slash'
 		});
 	});

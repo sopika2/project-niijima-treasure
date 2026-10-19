@@ -74,7 +74,9 @@ const palette = z.strictObject({
 	overlay: color,
 	/** The flip colors: selected items turn into ink on paper, like a highlighted menu entry. */
 	paper: color,
-	ink: color
+	ink: color,
+	/** The second shard of the menu cursor (cyan in Persona 5). */
+	cursor: color
 });
 
 export const styleSchema = z.strictObject({
@@ -138,10 +140,12 @@ export const styleSchema = z.strictObject({
 		/** Pattern behind the page. */
 		texture: z.enum(['halftone', 'stripes', 'none']),
 		/**
-		 * The menu on wide screens: "persona" is the cascading command menu over a starburst,
-		 * "accent" a solid red slab, "surface" the same color as cards.
+		 * "command": a slim top bar, and the full-screen Persona command menu opens from the Menu
+		 * button or Esc. "sidebar": a menu always shown at the side on wide screens.
 		 */
-		sidebar: z.enum(['persona', 'accent', 'surface']),
+		navigation: z.enum(['command', 'sidebar']),
+		/** With navigation: sidebar, its color: a solid accent slab, or the same as cards. */
+		sidebar: z.enum(['accent', 'surface']),
 		/** Page changes play a red/black slash wipe (only when motion is on). */
 		page_transition: z.enum(['slash', 'none'])
 	}),
@@ -169,7 +173,21 @@ export const styleSchema = z.strictObject({
 			'system',
 			'menu',
 			'menu_title',
-			'menu_hint'
+			'menu_hint',
+			'menu_heading',
+			'confirm',
+			'move'
+		),
+		/** The line under the big heading on the command menu, for the highlighted command. */
+		nav_hints: wordGroup(
+			'dashboard',
+			'transactions',
+			'accounts',
+			'recurring',
+			'budgets',
+			'goals',
+			'reports',
+			'system'
 		),
 		terms: wordGroup(
 			'balance',
@@ -487,7 +505,18 @@ export const styleSchema = z.strictObject({
 			'missing_rates'
 		)
 	}),
-	assets: z.strictObject({ favicon: asset, logo: asset })
+	assets: z.strictObject({
+		favicon: asset,
+		logo: asset,
+		/**
+		 * Character art on the command menu: one image for every command, and optionally one per
+		 * command (keys as in copy.nav). Paths to images in app/static; null shows the star pattern.
+		 */
+		menu_art: z.strictObject({
+			default: asset,
+			commands: z.record(z.string(), asset.unwrap())
+		})
+	})
 });
 
 export type Style = z.output<typeof styleSchema>;

@@ -16,6 +16,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 		styleHash: hash,
 		favicon: style.assets.favicon,
 		logo: style.assets.logo,
+		menuArt: style.assets.menu_art,
 		user: locals.user
 	};
 };

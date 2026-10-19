@@ -45,6 +45,7 @@ colors:
     overlay: '#000000cc' # dimmed backdrop behind dialogs
     paper: '#ffffff' # a selected row flips to ink on paper
     ink: '#000000'
+    cursor: '#22e3f0' # the cyan shard behind the highlighted menu command
 
   light:
     background: '#f2efe9'
@@ -66,6 +67,7 @@ colors:
     overlay: '#000000aa'
     paper: '#000000'
     ink: '#ffffff'
+    cursor: '#22e3f0' # the cyan shard behind the highlighted menu command
 
 # ── Typography ───────────────────────────────────────────────────────────────
 typography:
@@ -141,7 +143,8 @@ layout:
   density: comfortable # comfortable | compact
   card_style: cut # flat | outlined | elevated | cut (clipped corner)
   texture: halftone # halftone | stripes | none (pattern behind the page)
-  sidebar: persona # persona (command menu over a starburst) | accent (red slab) | surface
+  navigation: command # command (top bar + full-screen Persona menu) | sidebar (always-on menu)
+  sidebar: accent # with navigation: sidebar — accent (red slab) | surface
   page_transition: slash # slash (red wipe between pages) | none
   dashboard_columns: 2 # columns of widgets on wide screens (1 to 4)
   # Order of dashboard widgets by extension id. Enabled extensions not listed
@@ -177,9 +180,21 @@ copy:
     goals: Treasures
     reports: Reports
     system: System
-    menu: Menu # the phone button that opens the full menu
-    menu_title: 'Menu: Main' # the little plate on the menu
+    menu: Menu # the button that opens the command menu
+    menu_title: 'Menu: Main' # the little plate on the command menu
     menu_hint: Select a command
+    menu_heading: Command # the big word at the bottom of the command menu
+    confirm: Confirm
+    move: Move
+  nav_hints: # the line under "Command" for the highlighted item
+    dashboard: See where everything stands
+    transactions: Go through every entry
+    accounts: Manage accounts and categories
+    recurring: Rent, salary and other regulars
+    budgets: Check the limits
+    goals: Plan the next heist
+    reports: Open the case file
+    system: Backups, rates and settings
   terms:
     balance: Balance
     total: Total
@@ -492,3 +507,6 @@ copy:
 assets:
   favicon: /favicon.svg
   logo: null # path to an image in app/static, or null to show app_name as text
+  menu_art: # character art on the command menu; null shows the star pattern
+    default: null # e.g. /art/makoto.png (put the file in app/static/art)
+    commands: {} # a different image per command, e.g. budgets: /art/makoto-budgets.png
