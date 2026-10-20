@@ -26,66 +26,72 @@ colors:
   scheme: dark # dark | light | auto (follow the device setting)
 
   dark:
-    background: '#000000' # page behind everything
-    surface: '#141414' # cards, panels, sheets
-    surface_raised: '#232323' # menus, popovers, hovered rows
-    border: '#3a3a3a'
+    # The landing page's palette (niijimasisters.com): ink, thief red, Makoto's cyan, Sae's gold.
+    background: '#0b0b0d' # page behind everything (ink)
+    surface: '#16161b' # cards, panels, sheets
+    surface_raised: '#1f1f26' # menus, popovers, hovered rows
+    border: '#34343d'
     text: '#ffffff'
-    text_muted: '#b4b0aa' # labels, hints, secondary numbers
-    accent: '#e8132b' # Makoto red: the sidebar, buttons, focus, the active item
+    text_muted: '#b8b3ad' # labels, hints, secondary numbers
+    accent: '#d90416' # thief red: buttons, focus, the active item
     accent_text: '#ffffff' # text drawn on top of accent
-    secondary: '#3f7ce8' # Sae blue: transfers, info, Sae's side
-    secondary_text: '#ffffff'
-    income: '#39d98a'
-    expense: '#ff5d6c'
-    success: '#39d98a'
-    warning: '#ffc23d'
+    secondary: '#3fd8ff' # Makoto's cyan: transfers, info
+    secondary_text: '#0b0b0d'
+    income: '#ffc61a' # Sae's gold: money coming in
+    expense: '#ff5a6a' # a lighter thief red, readable as small text
+    success: '#3fd8ff'
+    warning: '#ffc61a'
     danger: '#ff4258'
-    focus_ring: '#ffffff'
-    overlay: '#000000cc' # dimmed backdrop behind dialogs
+    focus_ring: '#ffe600'
+    overlay: '#0b0b0dcc' # dimmed backdrop behind dialogs
     paper: '#ffffff' # a selected row flips to ink on paper
-    ink: '#000000'
-    cursor: '#22e3f0' # the cyan shard behind the highlighted menu command
+    ink: '#0b0b0d'
+    cursor: '#3fd8ff' # the cyan shard behind the highlighted menu command
+    makoto: '#3fd8ff' # Makoto's side of the landing page
+    sae: '#ffc61a' # Sae's side
 
   light:
     background: '#f2efe9'
     surface: '#ffffff'
     surface_raised: '#e9e5dd'
     border: '#cfc9bf'
-    text: '#000000'
+    text: '#0b0b0d'
     text_muted: '#55504a'
-    accent: '#d10f25'
+    accent: '#d90416'
     accent_text: '#ffffff'
-    secondary: '#2459c4'
+    secondary: '#0a7fa3'
     secondary_text: '#ffffff'
-    income: '#11804f'
+    income: '#8a6500'
     expense: '#c4202f'
-    success: '#11804f'
-    warning: '#9a6400'
+    success: '#0a7fa3'
+    warning: '#8a6500'
     danger: '#c4202f'
-    focus_ring: '#000000'
-    overlay: '#000000aa'
-    paper: '#000000'
+    focus_ring: '#0b0b0d'
+    overlay: '#0b0b0daa'
+    paper: '#0b0b0d'
     ink: '#ffffff'
-    cursor: '#22e3f0' # the cyan shard behind the highlighted menu command
+    cursor: '#3fd8ff'
+    makoto: '#0a7fa3'
+    sae: '#8a6500'
 
 # ── Typography ───────────────────────────────────────────────────────────────
 typography:
   # Optional extra stylesheets to load fonts from (https only). Anton, Barlow Semi Condensed,
-  # Fraunces, League Spartan and Zilla Slab ship with the app.
+  # Abril Fatface, Alfa Slab One, Archivo Black, Special Elite, Fraunces, League Spartan and
+  # Zilla Slab ship with the app.
   import: []
   font_body: '"Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif'
   font_heading: 'Anton, Impact, "Arial Black", sans-serif'
   font_numbers: '"Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif'
   # Cut-out letters (the command menu, page titles) are mixed from these, ransom-note style.
   # The first also sets every word's first letter. All of them ship with the app.
-  font_ransom:
-    - { font: 'Fraunces, Georgia, serif', weight: 900, scale: 1 }
-    - { font: '"League Spartan", "Arial Black", sans-serif', weight: 800, scale: 0.98 }
-    - { font: '"Zilla Slab", Rockwell, serif', weight: 700, scale: 1.06 }
-    - { font: 'Fraunces, Georgia, serif', weight: 900, scale: 1.02 }
+  font_ransom: # the landing page's cut-out faces
+    - { font: '"Abril Fatface", Didot, Georgia, serif', weight: 400, scale: 1 }
+    - { font: '"Alfa Slab One", Rockwell, Georgia, serif', weight: 400, scale: 0.84 }
+    - { font: '"Archivo Black", "Arial Black", sans-serif', weight: 400, scale: 0.82 }
+    - { font: '"Special Elite", "Courier New", monospace', weight: 400, scale: 1.04 }
     - { font: 'Anton, Impact, sans-serif', weight: 400, scale: 1.1 }
-    - { font: '"League Spartan", "Arial Black", sans-serif', weight: 800, scale: 1.04 }
+    - { font: '"Alfa Slab One", Rockwell, Georgia, serif', weight: 400, scale: 0.86 }
   base_size: 17px
   line_height: 1.45
   size:
@@ -102,7 +108,7 @@ typography:
     heading: 400 # Anton has one weight; it is already heavy
   heading_case: uppercase # none | uppercase | lowercase | capitalize
   heading_letter_spacing: 0.02em
-  heading_italic: true # slanted headings
+  heading_italic: false # slanted headings (the landing page tilts instead of slanting)
   tabular_numbers: true # numbers line up in columns
   title_style: ransom # ransom (cut-out letters, calling-card style) | plain
 
@@ -123,7 +129,7 @@ shape:
   accent_border_width: 4px # the bold stripe on highlighted cards
   shadow:
     card: none
-    raised: '8px 8px 0 #e8132b' # sheets and dialogs: a hard red shadow
+    raised: '10px 10px 0 #d90416' # sheets and dialogs: a hard red shadow
   skew: -10deg # slant of tags, badges, buttons and the selected item; 0deg turns it off
   cut_corner: 18px # clipped top-right corner on cards; 0px for square corners
 
@@ -157,9 +163,9 @@ layout:
 
 # ── Charts ───────────────────────────────────────────────────────────────────
 charts:
-  # Category colors, in this fixed order. Checked for color-blind separation and contrast on
-  # the dark surface; if you change them, keep neighbours clearly different.
-  palette: ['#e66767', '#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300', '#9085e9']
+  # Category colors, in this fixed order: the landing page's red, cyan, gold and violet first,
+  # then a few neighbours that stay clearly different on the dark surface.
+  palette: ['#ff5a6a', '#3fd8ff', '#ffc61a', '#b45cff', '#dbd7cb', '#ff9f43', '#4fd1a5', '#8b8b95']
   line_width: 2
   curve: monotone # linear | monotone | step
   grid: true
@@ -225,6 +231,15 @@ copy:
   empty:
     dashboard: No accounts yet. Once you add one, its balance shows up here.
     widgets: No widgets enabled. List extensions under "extensions" in config.yml.
+  loader: # shown when a page takes a moment to load
+    text: Take your time
+  palace: # the error page, like the landing page's 404 Palace
+    target: Target
+    missing_title: This Palace doesn't exist
+    missing_body: "No distortion here. Nothing to steal.\nWhatever you were looking for never had a Palace."
+    error_title: The heist hit a snag
+    error_body: "Something went wrong on our side.\nTry again, or head back to the hideout."
+    back: Return to the hideout
   signin: # the sign-in screen
     kicker: Niijima Network
     title: Treasury

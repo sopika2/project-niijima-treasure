@@ -36,8 +36,18 @@
 {/if}
 
 <style>
-	/* Slanted blocks with a hard offset shadow; the label stays upright. */
+	/*
+	 * The landing page's button (niijimasisters.com): a paper front on a block offset behind it,
+	 * the whole thing tilted. Hover flips the front to ink and pushes the block further out.
+	 * Variants change the colours: secondary has a red front, ghost is an outline, danger is red.
+	 */
 	.button {
+		--front: var(--tr-color-paper);
+		--label: var(--tr-color-ink);
+		--back: var(--tr-color-accent);
+		--hover-front: var(--tr-color-ink);
+		--hover-label: var(--tr-color-paper);
+		--hover-back: var(--tr-color-accent);
 		position: relative;
 		isolation: isolate;
 		display: inline-flex;
@@ -48,66 +58,87 @@
 		padding: 0 var(--tr-space-lg);
 		border: 0;
 		background: none;
-		color: inherit;
+		color: var(--label);
 		font: inherit;
 		font-family: var(--tr-font-heading);
-		font-style: var(--tr-heading-style);
-		text-transform: var(--tr-heading-case);
-		letter-spacing: var(--tr-heading-spacing);
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
 		font-size: var(--tr-text-md);
 		text-decoration: none;
 		white-space: nowrap;
 		cursor: pointer;
-		transition: transform var(--tr-duration-fast) var(--tr-ease-standard);
+		transform: rotate(-2deg);
+		transition:
+			transform var(--tr-duration-fast) var(--tr-ease-emphasized),
+			color var(--tr-duration-fast);
 	}
-	.button::before {
+	.button::before,
+	.button::after {
 		content: '';
 		position: absolute;
 		inset: 0;
-		z-index: -1;
-		transform: skewX(var(--tr-skew));
-		transition: box-shadow var(--tr-duration-fast) var(--tr-ease-standard);
+		clip-path: polygon(3% 6%, 100% 0, 96% 100%, 0 90%);
+		transition:
+			transform var(--tr-duration-fast) var(--tr-ease-emphasized),
+			background-color var(--tr-duration-fast);
 	}
-	.button:hover:not(:disabled) {
-		transform: translate(-1px, -1px);
+	.button::before {
+		z-index: -1;
+		background: var(--front);
+	}
+	.button::after {
+		z-index: -2;
+		background: var(--back);
+		transform: translate(5px, 5px);
+	}
+	.button:hover:not(:disabled),
+	.button:focus-visible {
+		color: var(--hover-label);
+		transform: rotate(-2deg) scale(1.05);
+	}
+	.button:hover:not(:disabled)::before,
+	.button:focus-visible::before {
+		background: var(--hover-front);
+	}
+	.button:hover:not(:disabled)::after,
+	.button:focus-visible::after {
+		background: var(--hover-back);
+		transform: translate(8px, 8px);
 	}
 	.button:active:not(:disabled) {
-		transform: translate(2px, 2px);
+		transform: rotate(-2deg) scale(0.97);
 	}
 	.button:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
 	}
-	[data-variant='primary'] {
-		color: var(--tr-color-accent-text);
-	}
-	[data-variant='primary']::before {
-		background: var(--tr-color-accent);
-		box-shadow: 4px 4px 0 var(--tr-color-paper);
-	}
+	/* primary is the landing page's ENTER / PEEK exactly; secondary is the red-fronted one. */
 	[data-variant='secondary'] {
-		color: var(--tr-color-secondary-text);
-	}
-	[data-variant='secondary']::before {
-		background: var(--tr-color-secondary);
-		box-shadow: 4px 4px 0 var(--tr-color-paper);
+		--front: var(--tr-color-accent);
+		--label: var(--tr-color-accent-text);
+		--back: var(--tr-color-ink);
+		--hover-front: var(--tr-color-paper);
+		--hover-label: var(--tr-color-ink);
+		--hover-back: var(--tr-color-accent);
 	}
 	[data-variant='ghost'] {
-		color: var(--tr-color-text);
+		--front: transparent;
+		--label: var(--tr-color-text);
+		--back: transparent;
+		--hover-back: var(--tr-color-accent);
 	}
 	[data-variant='ghost']::before {
-		border: var(--tr-border-width) solid var(--tr-color-text);
-	}
-	[data-variant='ghost']:hover:not(:disabled) {
-		color: var(--tr-color-ink);
+		box-shadow: inset 0 0 0 var(--tr-border-width) var(--tr-color-text);
 	}
 	[data-variant='ghost']:hover:not(:disabled)::before {
-		background: var(--tr-color-paper);
+		box-shadow: none;
 	}
 	[data-variant='danger'] {
-		color: var(--tr-color-danger);
-	}
-	[data-variant='danger']::before {
-		border: var(--tr-border-width) solid var(--tr-color-danger);
+		--front: var(--tr-color-ink);
+		--label: var(--tr-color-danger);
+		--back: var(--tr-color-danger);
+		--hover-front: var(--tr-color-danger);
+		--hover-label: var(--tr-color-paper);
+		--hover-back: var(--tr-color-paper);
 	}
 </style>

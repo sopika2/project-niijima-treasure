@@ -22,13 +22,6 @@ export interface CommandWords {
 	readonly flavor: readonly [string, string];
 }
 
-/** The accounts, shown like the party in the corner of the command menu. */
-export interface PartyMember {
-	readonly name: string;
-	/** Share of the total, 0–1 (the bar). */
-	readonly share: number;
-}
-
 export interface MenuArt {
 	readonly default: string | null;
 	readonly commands: Readonly<Record<string, string>>;

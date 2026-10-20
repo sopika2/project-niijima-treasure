@@ -1,32 +1,30 @@
 <script lang="ts">
 	/**
-	 * The Persona 5 command menu, laid out from the game's own screen (measured against a
-	 * 1214×681 capture). Layers, back to front:
+	 * The command menu, built like the Network screen on niijimasisters.com so the Treasury and
+	 * the landing page read as one place. Layers, back to front:
 	 *
-	 *   the page, frozen and soaked in dark red (the game world behind the menu)
-	 *   the picture: character art from style.yml, or a stand-in that shifts per command
-	 *   the commands, tight and right-aligned as cut-out words on black paper, the highlighted
-	 *     one bigger with red and cyan shards behind it that never sit still
-	 *   flavour strips, the "Menu: Main" plate and a huge number in the top corner
-	 *   the giant heading with one line about the command, the money, the party, the hints
+	 *   ink, a red band and a thin paper band slashed across, an outlined burst and a ghost word
+	 *   the in-game calendar (date, weekday, time of day) top left, BACK [Esc] top right
+	 *   the menu art for the highlighted command (or its number, outlined) on the right
+	 *   the commands down the left; the highlighted one in cut-out letters on a boiling
+	 *     red-and-paper blade, the others in plain display type, every row the same height
+	 *   a speech box describing the highlighted command, the total, the key hints
 	 *
 	 * Up/Down or pointing moves the cursor, Enter or a click goes there, Esc closes.
 	 */
-	import { onMount } from 'svelte';
-	import Cutout from './Cutout.svelte';
-	import MenuBackdrop from './MenuBackdrop.svelte';
-	import type { CommandWords, MenuArt, NavItem, PartyMember } from './types.ts';
+	import { onMount, tick } from 'svelte';
+	import { ransom } from './ransom.ts';
+	import type { CommandWords, MenuArt, NavItem } from './types.ts';
 
 	interface Props {
 		items: readonly NavItem[];
 		words: CommandWords;
 		wallet?: { label: string; text: string } | null;
-		party?: readonly PartyMember[];
 		art?: MenuArt | null;
 		onclose: () => void;
 	}
 
-	let { items, words, wallet = null, party = [], art = null, onclose }: Props = $props();
+	let { items, words, wallet = null, art = null, onclose }: Props = $props();
 
 	// svelte-ignore state_referenced_locally
 	let selected = $state(
@@ -36,6 +34,8 @@
 		)
 	);
 	let list = $state<HTMLUListElement | null>(null);
+	let menu = $state<HTMLElement | null>(null);
+	let blade = $state<SVGSVGElement | null>(null);
 
 	const current = $derived(items[selected]);
 	const number = $derived(String(selected + 1).padStart(2, '0'));
@@ -43,19 +43,126 @@
 		(current?.key ? art?.commands[current.key] : undefined) ?? art?.default ?? null
 	);
 
-	/** The money split into the number and the currency, so the currency can be drawn big. */
-	const money = $derived.by(() => {
-		const match = wallet?.text.match(/^([^\d-]*)(-?[\d\s.,\u00a0\u202f]*\d)(.*)$/u);
-		return match
-			? { before: match[1]!.trim(), digits: match[2]!, after: match[3]!.trim() }
-			: { before: '', digits: wallet?.text ?? '', after: '' };
-	});
+	/* ── The calendar in the corner, like the game's (and the landing page's) ────────────── */
+	const DAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+	const PHASES: Array<[number, string]> = [
+		[0, 'Late night'],
+		[5, 'Early morning'],
+		[8, 'Morning'],
+		[11, 'Lunchtime'],
+		[13, 'Afternoon'],
+		[16, 'After school'],
+		[18, 'Evening'],
+		[22, 'Late night']
+	];
+	let now = $state(new Date());
+	const phase = $derived(PHASES.filter(([hour]) => now.getHours() >= hour).at(-1)![1]);
+	const clock = $derived(
+		`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+	);
 
-	/** How far each line steps left of the stack's right edge, and its lean (from the game). */
-	const step = [-1.2, -2.6, -5, -5.6, -6.6, -7.4, -6.2, -5.9, -4.8];
-	const lean = [-2, 1, -1, 0, 1, -1, 1, 0, -1];
-	const place = (index: number) =>
-		`--dx:${step[index % step.length]};--r:${lean[index % lean.length]}deg;--n:${index}`;
+	/** A jagged star of `spikes` points, deterministic so it doesn't jump between renders. */
+	function burst(spikes: number, outer: number, inner: number, salt: number): string {
+		const points: string[] = [];
+		for (let i = 0; i < spikes * 2; i++) {
+			const angle = (Math.PI * i) / spikes - Math.PI / 2;
+			const wobble = Math.abs((Math.sin((i + 1) * 12.9898 * salt) * 43758.5453) % 1) * 0.2;
+			const r = i % 2 ? inner * (0.88 + wobble) : outer * (0.8 + wobble);
+			points.push(
+				`${(50 + Math.cos(angle) * r).toFixed(1)},${(50 + Math.sin(angle) * r).toFixed(1)}`
+			);
+		}
+		return points.join(' ');
+	}
+	const hudBurst = burst(11, 48, 30, 3);
+	const bigBurst = burst(14, 49, 33, 7);
+
+	/* ── The highlighted command in cut-out tiles: ink, red, paper, never twice in a row ─── */
+	const TILES = ['ink', 'accent', 'paper'] as const;
+	function tiles(text: string, salt: number) {
+		let last = -1;
+		return ransom(text.toUpperCase(), salt).map((letter, i) => {
+			let pick = i === 0 ? 0 : letter.pick % TILES.length;
+			if (pick === last) pick = (pick + 1) % TILES.length;
+			last = pick;
+			return { ...letter, tile: TILES[pick] };
+		});
+	}
+
+	/* ── The blade behind the highlighted command: three layered shapes that never sit still ── */
+	type Shape = Record<'front' | 'back' | 'accent', number[][]>;
+	let base: Shape | null = null;
+	function shapeFor(link: HTMLElement): Shape | null {
+		if (!menu) return null;
+		const m = menu.getBoundingClientRect();
+		const b = link.getBoundingClientRect();
+		if (!b.width) return null;
+		const [x, y, w, h] = [b.left - m.left, b.top - m.top, b.width, b.height];
+		const dag = Math.max(40, h * 0.78);
+		return {
+			front: [
+				[x - 18, y + 8],
+				[x + w + 8, y - 6],
+				[x + w + 8 + dag * 0.78, y + h * 0.1],
+				[x + w + 8 + dag * 0.46, y + h * 0.36],
+				[x + w + 16 + dag * 1.15, y + h * 0.5],
+				[x + w + 4, y + h + 4],
+				[x - 8, y + h - 3]
+			],
+			back: [
+				[x - 38, y + 20],
+				[x + w * 0.45, y + 8],
+				[x + w + 30, y + 4],
+				[x + w + 30 + dag * 1.05, y + h * 0.26],
+				[x + w + 30 + dag * 0.74, y + h * 0.5],
+				[x + w + 40 + dag * 1.7, y + h * 0.74],
+				[x + w + 12, y + h + 8],
+				[x + w * 0.38, y + h + 4],
+				[x - 22, y + h + 12]
+			],
+			accent: [
+				[x - 30, y + h * 0.62],
+				[x + w * 0.6, y + h * 0.3],
+				[x + w + 50, y + h * 0.36],
+				[x + w + 60 + dag * 2.3, y + h * 0.66],
+				[x + w + 30, y + h + 14],
+				[x - 10, y + h + 18]
+			]
+		};
+	}
+	const LAYERS = [
+		['front', 1],
+		['back', 1.4],
+		['accent', 1.8]
+	] as const;
+	function draw(amp: number) {
+		if (!base || !blade) return;
+		const shape = base;
+		const nudge = (scale: number) => (Math.random() * 2 - 1) * amp * scale;
+		for (const [name, scale] of LAYERS) {
+			const points = shape[name]
+				.map(([px, py]) => `${(px! + nudge(scale)).toFixed(1)},${(py! + nudge(scale)).toFixed(1)}`)
+				.join(' ');
+			blade
+				.querySelector(`.${name === 'back' ? 'back-shard' : name}`)
+				?.setAttribute('points', points);
+		}
+	}
+	async function place() {
+		await tick();
+		const link = list?.querySelectorAll<HTMLAnchorElement>('a')[selected];
+		base = link ? shapeFor(link) : null;
+		draw(0);
+		if (blade) {
+			blade.classList.remove('pop');
+			void blade.getBoundingClientRect();
+			blade.classList.add('pop');
+		}
+	}
+	$effect(() => {
+		void selected;
+		place();
+	});
 
 	function focusItem(index: number) {
 		selected = (index + items.length) % items.length;
@@ -73,52 +180,29 @@
 		event.stopPropagation();
 	}
 
-	/** The corners of the two cursor shards drift to a new spot a few times a second. */
-	function jitter(svg: SVGSVGElement) {
-		const html = document.documentElement;
-		if (html.dataset.motion === 'off' || matchMedia('(prefers-reduced-motion: reduce)').matches) {
-			return;
-		}
-		const shapes = [...svg.querySelectorAll('polygon')].map((polygon) => ({
-			polygon,
-			base: (polygon.getAttribute('points') ?? '').split(' ').map((p) => p.split(',').map(Number))
-		}));
-		const wobble = (base: number[][]) =>
-			base.map(([x, y]) => [x! + (Math.random() * 2 - 1) * 4, y! + (Math.random() * 2 - 1) * 5]);
-		let from = shapes.map((shape) => shape.base);
-		let to = shapes.map((shape) => wobble(shape.base));
-		let start = performance.now();
-		let frame = requestAnimationFrame(function loop(now) {
-			let t = (now - start) / 240;
-			if (t >= 1) {
-				from = to;
-				to = shapes.map((shape) => wobble(shape.base));
-				start = now;
-				t = 0;
-			}
-			shapes.forEach((shape, i) => {
-				const points = from[i]!.map((p, k) => {
-					const q = to[i]![k]!;
-					return `${(p[0]! + (q[0]! - p[0]!) * t).toFixed(1)},${(p[1]! + (q[1]! - p[1]!) * t).toFixed(1)}`;
-				});
-				shape.polygon.setAttribute('points', points.join(' '));
-			});
-			frame = requestAnimationFrame(loop);
-		});
-		return {
-			destroy: () => cancelAnimationFrame(frame)
-		};
-	}
-
 	onMount(() => {
 		focusItem(selected);
 		const html = document.documentElement;
 		const previous = html.style.overflow;
 		html.style.overflow = 'hidden';
+		const calm =
+			html.dataset.motion === 'off' || matchMedia('(prefers-reduced-motion: reduce)').matches;
+		const boil = calm ? 0 : window.setInterval(() => draw(3.2), 110);
+		const minute = window.setInterval(() => (now = new Date()), 30_000);
+		const resize = () => place();
+		window.addEventListener('resize', resize);
+		document.fonts?.ready.then(resize);
 		return () => {
 			html.style.overflow = previous;
+			window.clearInterval(boil);
+			window.clearInterval(minute);
+			window.removeEventListener('resize', resize);
 		};
 	});
+
+	/** Each line steps right a little and leans its own way, like the landing page's list. */
+	const LEAN = [-2, 1.5, -1, 2, -2.5, 1];
+	const SIZE = [1, 0.88, 1.05, 0.92, 0.84, 0.97];
 </script>
 
 <div
@@ -129,92 +213,99 @@
 	tabindex="-1"
 	onkeydown={key}
 >
-	<div class="world" aria-hidden="true"></div>
-
-	{#if artSrc}
-		{#key artSrc}
-			<img class="art" src={artSrc} alt="" />
-		{/key}
-	{:else}
-		<MenuBackdrop pose={selected} />
-	{/if}
-
-	<span class="strip dark" aria-hidden="true"
-		><Cutout text={words.flavor[0]} salt={11} variant="plain" /></span
-	>
-	<span class="strip light" aria-hidden="true"
-		><Cutout text={words.flavor[1]} salt={12} variant="plain" /></span
-	>
-	<div class="plate" aria-hidden="true">
-		<span class="plate-title"><Cutout text={words.plate.title} salt={3} variant="plain" /></span>
-		<span class="plate-hint"><Cutout text={words.plate.hint} salt={4} variant="plain" /></span>
+	<div class="bg" aria-hidden="true">
+		<svg class="burst" viewBox="0 0 100 100"><polygon points={bigBurst} /></svg>
+		<span class="band"></span>
+		<span class="band thin"></span>
+		<span class="ghost">{words.heading}</span>
 	</div>
-	{#key selected}
-		<span class="number" aria-hidden="true">{number}</span>
-	{/key}
 
-	<nav class="commands" aria-label={words.heading}>
+	<div class="hud" aria-hidden="true">
+		<svg class="hud-burst" viewBox="0 0 100 100"><polygon points={hudBurst} /></svg>
+		<span class="date"
+			><span class="m">{now.getMonth() + 1}</span><span class="slash">/</span><span
+				>{now.getDate()}</span
+			></span
+		>
+		<span class="dow" class:sun={now.getDay() === 0} class:sat={now.getDay() === 6}
+			>{DAYS[now.getDay()]}</span
+		>
+		<span class="phase">{phase.toUpperCase()}<span class="clock">{clock}</span></span>
+	</div>
+
+	<button type="button" class="back" onclick={onclose}
+		><i class="back-arrow" aria-hidden="true"></i>{words.close}<kbd>Esc</kbd></button
+	>
+
+	<div class="detail" aria-hidden="true">
+		{#key selected}
+			{#if artSrc}
+				<img class="art" src={artSrc} alt="" />
+			{:else}
+				<span class="numeral">{number}</span>
+			{/if}
+		{/key}
+	</div>
+
+	<nav class="menu" aria-label={words.heading} bind:this={menu}>
+		<svg class="blade" bind:this={blade} aria-hidden="true">
+			<polygon class="accent" />
+			<polygon class="back-shard" />
+			<polygon class="front" />
+		</svg>
 		<ul bind:this={list}>
 			{#each items as item, index (item.href)}
-				<li style={place(index)} class:on={index === selected}>
+				<li style="--i:{index};--r:{LEAN[index % LEAN.length]}deg;--s:{SIZE[index % SIZE.length]}">
 					<a
 						href={item.href}
+						class:on={index === selected}
 						aria-current={item.active ? 'page' : undefined}
-						aria-label={item.label}
 						aria-describedby={index === selected ? 'command-hint' : undefined}
-						onpointerenter={() => (selected = index)}
+						onpointerenter={(event) => {
+							if (event.pointerType === 'mouse') selected = index;
+						}}
 						onfocus={() => (selected = index)}
 						onclick={() => onclose()}
 					>
+						<span class="label" class:hidden={index === selected}>{item.label}</span>
 						{#if index === selected}
-							<svg
-								class="shards"
-								viewBox="0 0 100 100"
-								preserveAspectRatio="none"
-								aria-hidden="true"
-								use:jitter
-							>
-								<polygon class="red" points="2,58 58,40 104,22 100,96 8,104" />
-								<polygon class="cyan" points="-2,8 70,0 66,22 2,30" />
-							</svg>
+							<span class="tiles" aria-hidden="true">
+								{#each tiles(item.label, index) as letter, i (i)}
+									<span class="tile" data-tile={letter.tile} style={letter.style}
+										><span class="face">{letter.char}</span></span
+									>
+								{/each}
+							</span>
 						{/if}
-						<Cutout text={item.label} salt={index} />
 					</a>
 				</li>
 			{/each}
 		</ul>
 	</nav>
 
-	<span class="heading" aria-hidden="true"
-		><Cutout text={words.heading} salt={9} variant="heading" /></span
-	>
 	{#key selected}
-		<p class="hint" id="command-hint">{current?.hint ?? current?.label}</p>
+		<div class="speech">
+			<div class="tag"><b>{number}</b><span>{words.plate.title}</span></div>
+			<div class="card">
+				<p class="card-title">{current?.label}</p>
+				<p class="card-hint" id="command-hint">{current?.hint ?? ''}</p>
+				{#if current}
+					<a class="go" href={current.href} onclick={() => onclose()} tabindex="-1"
+						>{words.confirm}<i aria-hidden="true"></i></a
+					>
+				{/if}
+			</div>
+		</div>
 	{/key}
 
 	{#if wallet}
-		<p class="wallet" aria-label="{wallet.label}: {wallet.text}">
-			{#if money.before}<b aria-hidden="true">{money.before}</b>{/if}<span aria-hidden="true"
-				>{money.digits}</span
-			>{#if money.after}<b aria-hidden="true">{money.after}</b>{/if}
-		</p>
+		<p class="wallet"><b>{wallet.text}</b><span>{wallet.label}</span></p>
 	{/if}
 
-	{#if party.length > 0}
-		<ul class="party" aria-hidden="true">
-			{#each party.slice(0, 4) as member, i (i)}
-				<li style="--share:{Math.max(0.03, Math.min(1, member.share))};--n:{i}">
-					<span class="face"><Cutout text={member.name.slice(0, 2)} salt={20 + i} /></span>
-					<span class="bar"><span></span></span>
-				</li>
-			{/each}
-		</ul>
-	{/if}
-
-	<div class="keys">
-		<span class="key" aria-hidden="true"><kbd>↑↓</kbd>{words.move}</span>
-		<span class="key" aria-hidden="true"><kbd>⏎</kbd>{words.confirm}</span>
-		<button type="button" class="key close" onclick={onclose}><kbd>Esc</kbd>{words.close}</button>
+	<div class="keys" aria-hidden="true">
+		<span><kbd>↑↓</kbd>{words.move}</span>
+		<span><kbd>⏎</kbd>{words.confirm}</span>
+		<span><kbd>Esc</kbd>{words.close}</span>
 	</div>
 </div>
 
@@ -224,399 +315,635 @@
 		z-index: 40;
 		inset: 0;
 		overflow: hidden;
+		isolation: isolate;
+		container-type: size;
+		background: var(--tr-color-ink);
 		color: var(--tr-color-paper);
 		outline: none;
+		animation: wipe var(--tr-duration-normal) var(--tr-ease-emphasized) both;
+	}
+	@keyframes wipe {
+		from {
+			clip-path: polygon(0 0, 0 0, -18% 100%, -18% 100%);
+		}
+		to {
+			clip-path: polygon(0 0, 118% 0, 100% 100%, -18% 100%);
+		}
 	}
 
-	/* The page behind, frozen and drowned in dark red, like the game world behind its menu. */
-	.world {
+	/* ── Background: the landing page's slashes ─────────────────────────────── */
+	.bg {
 		position: absolute;
 		inset: 0;
-		background: color-mix(
-			in srgb,
-			color-mix(in srgb, var(--tr-color-accent) 58%, var(--tr-color-ink)) 88%,
-			transparent
+		z-index: -1;
+		pointer-events: none;
+	}
+	.band {
+		position: absolute;
+		left: -15%;
+		width: 130%;
+		top: 42%;
+		height: 32%;
+		background: var(--tr-color-accent);
+		transform: rotate(-12deg);
+		clip-path: polygon(0 16%, 58% 0, 100% 9%, 100% 82%, 41% 100%, 0 90%);
+	}
+	.band::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background-image: radial-gradient(
+			color-mix(in srgb, var(--tr-color-ink) 34%, transparent) 30%,
+			transparent 34%
 		);
-		backdrop-filter: blur(4px) grayscale(1) brightness(0.55);
-		animation: fade var(--tr-duration-fast) linear both;
+		background-size: 13px 13px;
+		mask-image: linear-gradient(90deg, transparent 10%, black 55%, transparent 95%);
+	}
+	.band.thin {
+		top: 38.4%;
+		height: 1.6%;
+		background: var(--tr-color-paper);
+		clip-path: polygon(0 30%, 100% 0, 100% 70%, 0 100%);
+	}
+	.band.thin::after {
+		display: none;
+	}
+	.burst {
+		position: absolute;
+		right: -9%;
+		top: -16%;
+		width: min(62cqw, 720px);
+		aspect-ratio: 1;
+	}
+	.burst polygon {
+		fill: none;
+		stroke: color-mix(in srgb, var(--tr-color-paper) 22%, transparent);
+		stroke-width: 0.5;
+	}
+	.ghost {
+		position: absolute;
+		left: -1%;
+		bottom: -5%;
+		font: 400 clamp(100px, 15cqw, 260px) / 0.8 var(--tr-font-heading);
+		text-transform: uppercase;
+		white-space: nowrap;
+		color: transparent;
+		-webkit-text-stroke: 2px color-mix(in srgb, var(--tr-color-paper) 22%, transparent);
+		opacity: 0.7;
+	}
+
+	/* ── The calendar ───────────────────────────────────────────────────────── */
+	.hud {
+		--hud: clamp(44px, 8cqh, 72px);
+		position: absolute;
+		z-index: 6;
+		left: clamp(26px, 3.4cqw, 56px);
+		top: clamp(26px, 5cqh, 50px);
+		display: inline-grid;
+		grid-template-columns: auto auto;
+		align-items: end;
+		column-gap: calc(var(--hud) * 0.14);
+		row-gap: calc(var(--hud) * 0.1);
+		font-family: var(--tr-font-heading);
+		transform: rotate(-6deg);
+		transform-origin: 0 0;
+		user-select: none;
+	}
+	.hud-burst {
+		position: absolute;
+		left: calc(var(--hud) * -0.55);
+		top: calc(var(--hud) * -0.6);
+		z-index: -1;
+		width: calc(var(--hud) * 2.4);
+		height: calc(var(--hud) * 2.4);
+	}
+	.hud-burst polygon {
+		fill: var(--tr-color-accent);
+	}
+	.date {
+		display: flex;
+		align-items: baseline;
+		font-size: var(--hud);
+		line-height: 0.85;
+		text-shadow: calc(var(--hud) * 0.06) calc(var(--hud) * 0.06) 0 var(--tr-color-ink);
+	}
+	.date .m {
+		font-size: 0.72em;
+	}
+	.slash {
+		margin: 0 0.02em;
+		font-size: 0.9em;
+		color: var(--tr-color-ink);
+		text-shadow: none;
+		-webkit-text-stroke: 0.04em var(--tr-color-paper);
+		transform: skewX(-14deg);
+	}
+	.dow {
+		align-self: center;
+		padding: 0.14em 0.3em 0.06em;
+		font-size: calc(var(--hud) * 0.38);
+		line-height: 1;
+		letter-spacing: 0.06em;
+		background: var(--tr-color-paper);
+		color: var(--tr-color-ink);
+		transform: rotate(8deg) translateY(-0.2em);
+		clip-path: polygon(0 8%, 100% 0, 94% 100%, 4% 92%);
+	}
+	.dow.sun {
+		background: var(--tr-color-accent);
+		color: var(--tr-color-paper);
+	}
+	.dow.sat {
+		background: var(--tr-color-makoto);
+		color: var(--tr-color-ink);
+	}
+	.phase {
+		grid-column: 1 / -1;
+		justify-self: start;
+		display: inline-flex;
+		align-items: baseline;
+		gap: 0.6em;
+		margin-left: calc(var(--hud) * 0.2);
+		padding: 0.3em 0.9em 0.22em 0.5em;
+		font-size: calc(var(--hud) * 0.3);
+		letter-spacing: 0.12em;
+		line-height: 1;
+		background: var(--tr-color-ink);
+		box-shadow: 4px 4px 0 var(--tr-color-accent);
+		clip-path: polygon(0 0, 100% 10%, 97% 100%, 1% 88%);
+	}
+	.clock {
+		color: var(--tr-color-text-muted);
+		font: 700 0.62em/1 var(--tr-font-body);
+		letter-spacing: 0.1em;
+	}
+
+	/* ── BACK [Esc] ─────────────────────────────────────────────────────────── */
+	.back {
+		position: absolute;
+		z-index: 9;
+		right: clamp(16px, 2.6cqw, 40px);
+		top: clamp(16px, 3.4cqh, 32px);
+		isolation: isolate;
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		padding: 12px 20px 10px 26px;
+		border: 0;
+		background: none;
+		color: var(--tr-color-ink);
+		font: 400 24px/1 var(--tr-font-heading);
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		cursor: pointer;
+		transform: rotate(3deg);
+		transition: transform var(--tr-duration-fast) var(--tr-ease-emphasized);
+	}
+	.back::before,
+	.back::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		clip-path: polygon(12% 0, 100% 8%, 95% 100%, 0 86%);
+	}
+	.back::before {
+		z-index: -1;
+		background: var(--tr-color-paper);
+	}
+	.back::after {
+		z-index: -2;
+		background: var(--tr-color-accent);
+		transform: translate(-8px, 7px);
+	}
+	.back:hover,
+	.back:focus-visible {
+		color: var(--tr-color-paper);
+		transform: rotate(3deg) scale(1.07);
+	}
+	.back:hover::before,
+	.back:focus-visible::before {
+		background: var(--tr-color-accent);
+	}
+	.back:hover::after,
+	.back:focus-visible::after {
+		background: var(--tr-color-paper);
+	}
+	.back-arrow {
+		width: 0.62em;
+		height: 0.72em;
+		background: currentColor;
+		clip-path: polygon(100% 0, 0 50%, 100% 100%, 76% 50%);
+	}
+	.back kbd {
+		padding: 5px 6px 4px;
+		background: var(--tr-color-ink);
+		color: var(--tr-color-paper);
+		font: 700 11px/1 var(--tr-font-body);
+		letter-spacing: 0.14em;
+		transform: rotate(-6deg);
+	}
+
+	/* ── The art (or the command's number) on the right ────────────────────── */
+	.detail {
+		position: absolute;
+		z-index: 1;
+		right: 0;
+		top: 0;
+		bottom: 0;
+		width: 58%;
+		pointer-events: none;
 	}
 	.art {
 		position: absolute;
-		inset: 0;
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-		object-position: 30% 50%;
-		pointer-events: none;
-		animation: pose var(--tr-duration-normal) var(--tr-ease-emphasized) both;
+		right: -2%;
+		top: 0;
+		height: 64%;
+		max-width: 66%;
+		object-fit: contain;
+		object-position: 50% 0;
+		filter: drop-shadow(-14px 10px 0 var(--tr-color-accent))
+			drop-shadow(10px 8px 0 var(--tr-color-paper));
+		animation: bust var(--tr-duration-normal) var(--tr-ease-emphasized) both;
 	}
-
-	/* ── Top corner ────────────────────────────────────────────────────────── */
-	.strip {
+	.numeral {
 		position: absolute;
-		padding: 0.05em 0.3em 0.12em;
-		font-size: 5.2vh;
-		outline-width: 0.06em;
-		outline-style: solid;
-		outline-offset: -0.14em;
-		animation: drop var(--tr-duration-normal) var(--tr-ease-emphasized) backwards;
-	}
-	.strip.dark {
-		top: -1.5vh;
-		left: 66.5vw;
-		background: var(--tr-color-ink);
-		color: var(--tr-color-paper);
-		outline-color: var(--tr-color-paper);
-		transform: rotate(-9deg);
-		animation-delay: 60ms;
-	}
-	.strip.light {
-		top: 14.5vh;
-		left: 72.5vw;
-		background: var(--tr-color-paper);
-		color: var(--tr-color-ink);
-		outline-color: var(--tr-color-ink);
-		transform: rotate(-3deg);
-		animation-delay: 100ms;
-	}
-	.plate {
-		position: absolute;
-		top: 24.5vh;
-		left: 78vw;
-		display: grid;
-		justify-items: center;
-		padding: 0.6vh 1.6vh 1vh;
-		background: var(--tr-color-ink);
-		color: var(--tr-color-paper);
-		outline: 2px solid var(--tr-color-paper);
-		outline-offset: -6px;
-		transform: rotate(-5deg);
-		animation: drop var(--tr-duration-normal) var(--tr-ease-emphasized) 140ms backwards;
-	}
-	.plate-title {
-		font-size: 5vh;
-	}
-	.plate-hint {
-		margin-top: 0.3vh;
-		font-size: 2.1vh;
-	}
-	.number {
-		position: absolute;
-		top: 33vh;
-		left: 76vw;
-		color: var(--tr-color-paper);
-		font-family: var(--tr-font-ransom-1);
-		font-size: 22vh;
-		font-weight: var(--tr-font-ransom-1-weight);
-		line-height: 1;
-		-webkit-text-stroke: 0.04em var(--tr-color-ink);
-		paint-order: stroke fill;
-		filter: drop-shadow(0.03em 0.04em 0 var(--tr-color-ink));
-		transform: rotate(-6deg) scale(0.72, 1.25);
-		transform-origin: left top;
-		animation: number var(--tr-duration-fast) var(--tr-ease-emphasized) backwards;
-	}
-
-	/* ── The commands ─────────────────────────────────────────────────────── */
-	.commands {
-		position: absolute;
-		top: 26vh;
-		left: 0;
-		width: 56vw;
-		font-size: 4.9vh;
-	}
-	ul {
-		margin: 0;
-		padding: 0;
-		list-style: none;
-	}
-	.commands li {
-		height: 5.5vh;
-		text-align: right;
-		transform: translateX(calc(var(--dx) * 1vw)) rotate(var(--r));
-		transform-origin: right center;
-		transition: height var(--tr-duration-fast) var(--tr-ease-standard);
-		animation: deal var(--tr-duration-normal) var(--tr-ease-emphasized) backwards;
-		animation-delay: calc(40ms + var(--n) * 30ms);
-	}
-	.commands li.on {
-		height: 7.4vh;
-	}
-	a {
-		position: relative;
-		display: inline-block;
-		color: inherit;
-		text-decoration: none;
-		outline: none;
-		transform-origin: right center;
-		transition: transform var(--tr-duration-normal) var(--tr-ease-emphasized);
-	}
-	li.on a {
-		z-index: 3;
-		transform: scale(1.3) translate(0.15em, 0.12em) rotate(-1deg);
-	}
-	/* The highlighted command's letters take a faint tint of the cursor. */
-	li.on a :global(.l) {
-		color: color-mix(in srgb, var(--tr-color-paper) 88%, var(--tr-color-cursor));
-	}
-	.shards {
-		position: absolute;
-		z-index: -2;
-		inset: -0.22em -0.45em -0.2em -0.25em;
-		width: calc(100% + 0.7em);
-		height: calc(100% + 0.42em);
-		overflow: visible;
-		transform-origin: left center;
-		animation: shard var(--tr-duration-fast) var(--tr-ease-emphasized) backwards;
-		pointer-events: none;
-	}
-	.shards .red {
-		fill: var(--tr-color-accent);
-	}
-	.shards .cyan {
-		fill: var(--tr-color-cursor);
-	}
-
-	/* ── The heading and the line under it ────────────────────────────────── */
-	.heading {
-		position: absolute;
-		top: 70vh;
-		left: 43vw;
-		font-size: 9vh;
-		transform: rotate(-3deg);
-		transform-origin: left bottom;
-		animation: drop var(--tr-duration-normal) var(--tr-ease-emphasized) 120ms backwards;
-	}
-	.hint {
-		position: absolute;
-		top: 84.6vh;
-		left: 59.2vw;
-		margin: 0;
-		color: var(--tr-color-paper);
-		font-family: var(--tr-font-body);
-		font-size: 3vh;
-		font-style: italic;
-		font-weight: var(--tr-weight-bold);
-		-webkit-text-stroke: 0.18em var(--tr-color-ink);
-		paint-order: stroke fill;
-		transform: rotate(-5deg);
-		animation: hint var(--tr-duration-fast) var(--tr-ease-standard) backwards;
-	}
-
-	/* ── Money ────────────────────────────────────────────────────────────── */
-	.wallet {
-		position: absolute;
-		top: 80vh;
-		left: 26.5vw;
-		display: flex;
-		align-items: baseline;
-		gap: 0.3em;
-		margin: 0;
-		color: var(--tr-color-paper);
-		-webkit-text-stroke: 0.14em var(--tr-color-ink);
-		paint-order: stroke fill;
-		transform: rotate(-6deg);
-		animation: drop var(--tr-duration-normal) var(--tr-ease-emphasized) 160ms backwards;
-	}
-	.wallet span {
-		font-family: var(--tr-font-body);
-		font-size: 5.6vh;
-		font-style: italic;
-		font-weight: var(--tr-weight-bold);
+		right: 10%;
+		top: 4%;
+		font: 400 clamp(160px, 46cqh, 420px) / 0.8 var(--tr-font-heading);
 		letter-spacing: -0.02em;
+		color: transparent;
+		-webkit-text-stroke: 3px var(--tr-color-paper);
+		opacity: 0.22;
+		transform: rotate(-8deg);
+		animation: bust var(--tr-duration-normal) var(--tr-ease-emphasized) both;
 	}
-	.wallet b {
-		font-family: var(--tr-font-ransom-2, var(--tr-font-heading));
-		font-size: 7vh;
-		font-weight: var(--tr-font-ransom-2-weight, 400);
+	@keyframes bust {
+		from {
+			opacity: 0;
+			translate: 9% 0;
+		}
 	}
 
-	/* ── The party (your accounts) and the button hints ───────────────────── */
-	.party {
+	/* ── The commands ───────────────────────────────────────────────────────── */
+	.menu {
+		/* Eight commands have to fit between the calendar and the total at any height. */
+		--mfs: clamp(24px, min(4.2cqw, 5.4cqh), 68px);
 		position: absolute;
-		top: 79vh;
-		left: 73.5vw;
-		display: flex;
-		gap: 0.6vw;
+		z-index: 3;
+		left: clamp(16px, 4cqw, 64px);
+		top: clamp(150px, 24cqh, 230px);
+		width: min(52%, 760px);
+	}
+	.menu ul {
+		position: relative;
+		z-index: 1;
 		margin: 0;
 		padding: 0;
 		list-style: none;
 	}
-	.party li {
-		display: grid;
-		gap: 0.5vh;
-		width: 5.6vw;
-		min-width: 3.5rem;
-		transform: rotate(-8deg);
-		animation: drop var(--tr-duration-normal) var(--tr-ease-emphasized) backwards;
-		animation-delay: calc(200ms + var(--n) * 40ms);
-	}
-	.face {
-		display: grid;
-		place-items: center;
-		height: 7.5vh;
-		background: var(--tr-color-ink);
-		border: 2px solid var(--tr-color-paper);
-		font-size: 3.4vh;
-		clip-path: polygon(10% 18%, 40% 0, 70% 6%, 100% 30%, 92% 100%, 0 92%);
-	}
-	.bar {
-		height: 0.75vh;
-		min-height: 4px;
-		background: var(--tr-color-surface-raised);
-		transform: skewX(-30deg);
-	}
-	.bar span {
-		display: block;
-		width: calc(var(--share) * 100%);
-		height: 100%;
-		background: var(--tr-color-cursor);
-	}
-	.keys {
-		position: absolute;
-		top: 92.5vh;
-		right: 3vw;
+	/* Every row the same height: the selection never moves the rows under the cursor. */
+	.menu li {
 		display: flex;
-		gap: 1.2vw;
+		align-items: center;
+		height: calc(var(--mfs) * 1.06);
+		transform: translateX(calc(var(--i) * 2.3cqw)) rotate(var(--r));
+		transform-origin: 0 50%;
 	}
-	.key {
+	.menu li + li {
+		margin-top: calc(var(--mfs) * 0.22);
+	}
+	.menu a {
+		position: relative;
 		display: inline-flex;
 		align-items: center;
-		gap: 0.25em;
-		padding: 0;
-		border: 0;
-		background: none;
+		padding: 0.06em 0.22em 0.02em 0.12em;
 		color: var(--tr-color-paper);
-		font-family: var(--tr-font-body);
-		font-size: max(0.95rem, 3vh);
-		font-style: italic;
-		font-weight: var(--tr-weight-bold);
-		-webkit-text-stroke: 0.16em var(--tr-color-ink);
+		font: 400 calc(var(--mfs) * var(--s)) / 0.98 var(--tr-font-heading);
+		letter-spacing: 0.01em;
+		text-decoration: none;
+		text-transform: uppercase;
+		-webkit-text-stroke: 0.055em var(--tr-color-ink);
 		paint-order: stroke fill;
+		text-shadow: 0.06em 0.06em 0 var(--tr-color-ink);
+		transform: skewX(-8deg);
+		transform-origin: 0 50%;
+		outline: none;
 	}
-	.close {
-		cursor: pointer;
+	.menu a.on {
+		transform: rotate(-3deg) skewX(-6deg);
 	}
-	kbd {
-		display: inline-grid;
-		place-items: center;
-		min-width: 1.25em;
-		height: 1.25em;
-		padding: 0 0.2em;
-		border-radius: 999px;
+	.label.hidden {
+		position: absolute;
+		opacity: 0;
+	}
+	.tiles {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.035em;
+		font-size: 1.05em;
+		-webkit-text-stroke: 0;
+		text-shadow: none;
+	}
+	.tile {
+		display: inline-block;
+		filter: drop-shadow(0.055em 0.055em 0 var(--tr-color-ink));
+		font-family: var(--font);
+		font-size: calc(1em * var(--scale));
+		font-weight: var(--weight);
+		transform: translateY(var(--lift)) rotate(var(--turn));
+		animation: tile-in var(--tr-duration-normal) var(--tr-ease-emphasized) both;
+		animation-delay: calc(var(--i) * 26ms);
+	}
+	.face {
+		display: block;
+		padding: 0.1em 0.13em 0.05em;
+		line-height: 0.9;
+		clip-path: var(--tear);
+	}
+	[data-tile='ink'] .face {
+		background: var(--tr-color-ink);
+		color: var(--tr-color-paper);
+	}
+	[data-tile='accent'] .face {
+		background: var(--tr-color-accent);
+		color: var(--tr-color-paper);
+	}
+	[data-tile='paper'] .face {
 		background: var(--tr-color-paper);
 		color: var(--tr-color-ink);
-		font-family: var(--tr-font-body);
-		font-size: 0.7em;
-		font-style: normal;
-		-webkit-text-stroke: 0;
-		box-shadow: 0 0 0 0.1em var(--tr-color-ink);
+	}
+	@keyframes tile-in {
+		from {
+			opacity: 0;
+			transform: translateY(-0.35em) rotate(calc(var(--turn) * -4)) scale(1.7);
+		}
 	}
 
-	/* ── Tall screens (phones) ─────────────────────────────────────────────── */
-	@media (max-aspect-ratio: 4/5) {
-		.commands {
-			top: 17vh;
-			width: 90vw;
-			font-size: min(4vh, 8vw);
+	.blade {
+		position: absolute;
+		inset: 0;
+		z-index: 0;
+		width: 100%;
+		height: 100%;
+		overflow: visible;
+		pointer-events: none;
+	}
+	.blade polygon {
+		transform-box: fill-box;
+		transform-origin: 0 50%;
+		stroke-linejoin: miter;
+	}
+	.blade .accent {
+		fill: var(--tr-color-makoto);
+	}
+	.blade .back-shard {
+		fill: var(--tr-color-accent);
+		stroke: var(--tr-color-ink);
+		stroke-width: 4px;
+	}
+	.blade .front {
+		fill: var(--tr-color-paper);
+		stroke: var(--tr-color-ink);
+		stroke-width: 5px;
+		stroke-miterlimit: 12;
+	}
+	:global(.blade.pop) polygon {
+		animation: pop 0.2s var(--tr-ease-emphasized) both;
+	}
+	:global(.blade.pop) .back-shard {
+		animation-delay: 0.03s;
+	}
+	:global(.blade.pop) .accent {
+		animation-delay: 0.06s;
+	}
+	@keyframes pop {
+		from {
+			opacity: 0.3;
+			transform: scaleX(0.25) skewX(-24deg);
 		}
-		.commands li {
-			height: 4.6vh;
-			transform: translateX(calc(var(--dx) * 0.6vw)) rotate(var(--r));
+	}
+
+	/* ── The speech box ─────────────────────────────────────────────────────── */
+	.speech {
+		position: absolute;
+		z-index: 4;
+		left: 51%;
+		bottom: clamp(56px, 8cqh, 84px);
+		width: min(34%, 500px);
+		transform: rotate(-3deg);
+		transform-origin: 0 100%;
+		filter: drop-shadow(-6px 6px 0 var(--tr-color-ink))
+			drop-shadow(10px 9px 0 var(--tr-color-makoto));
+		animation: speech var(--tr-duration-normal) var(--tr-ease-emphasized) both;
+	}
+	@keyframes speech {
+		from {
+			opacity: 0;
+			transform: rotate(-9deg) scale(0.86) translate(-24px, 18px);
 		}
-		.commands li.on {
-			height: 6.2vh;
+	}
+	.card {
+		padding: 38px 36px 28px 32px;
+		background: var(--tr-color-paper);
+		color: var(--tr-color-ink);
+		clip-path: polygon(0 4%, 60% 0, 100% 3%, 98% 100%, 2% 96%);
+	}
+	/* The tail, pointing up at the art. */
+	.speech::before {
+		content: '';
+		position: absolute;
+		right: 14%;
+		top: -46px;
+		width: 70px;
+		height: 60px;
+		background: var(--tr-color-paper);
+		clip-path: polygon(0 100%, 55% 30%, 40% 55%, 100% 0, 70% 100%);
+	}
+	.tag {
+		position: absolute;
+		z-index: 2;
+		left: 5%;
+		top: -16px;
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 8px 18px 6px 12px;
+		background: var(--tr-color-ink);
+		color: var(--tr-color-paper);
+		transform: rotate(-4deg);
+		clip-path: polygon(0 0, 100% 8%, 96% 100%, 2% 92%);
+	}
+	.tag b {
+		color: var(--tr-color-makoto);
+		font: 400 30px/1 var(--tr-font-heading);
+	}
+	.tag span {
+		font: 700 13px/16px var(--tr-font-body);
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+	}
+	.card-title {
+		margin: 0;
+		font: 400 clamp(32px, min(3.4cqw, 6cqh), 52px) / 0.95 var(--tr-font-heading);
+		text-transform: uppercase;
+	}
+	.card-hint {
+		margin: 10px 0 18px;
+		font: 500 clamp(15px, 1.2cqw, 17px) / 1.4 var(--tr-font-body);
+	}
+	.go {
+		position: relative;
+		isolation: isolate;
+		display: inline-flex;
+		align-items: center;
+		gap: 12px;
+		padding: 11px 24px 9px 20px;
+		color: var(--tr-color-paper);
+		font: 400 20px/1 var(--tr-font-heading);
+		letter-spacing: 0.04em;
+		text-decoration: none;
+		text-transform: uppercase;
+		transform: rotate(-3deg);
+	}
+	.go::before,
+	.go::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		clip-path: polygon(3% 6%, 100% 0, 96% 100%, 0 90%);
+	}
+	.go::before {
+		z-index: -1;
+		background: var(--tr-color-ink);
+	}
+	.go::after {
+		z-index: -2;
+		background: var(--tr-color-accent);
+		transform: translate(6px, 6px);
+	}
+	.go i {
+		width: 0.6em;
+		height: 0.7em;
+		background: currentColor;
+		clip-path: polygon(0 0, 100% 50%, 0 100%, 22% 50%);
+	}
+
+	/* ── The total, like the landing page's ONLINE counter ──────────────────── */
+	.wallet {
+		position: absolute;
+		z-index: 7;
+		left: clamp(18px, 3cqw, 46px);
+		bottom: clamp(20px, 4cqh, 38px);
+		display: inline-flex;
+		align-items: baseline;
+		gap: 12px;
+		margin: 0;
+		padding: 5px 20px 3px 16px;
+		background: var(--tr-color-paper);
+		color: var(--tr-color-ink);
+		border: 4px solid var(--tr-color-ink);
+		box-shadow: 8px 8px 0 var(--tr-color-accent);
+		transform: rotate(-3deg) skewX(-14deg);
+		transform-origin: 0 100%;
+		white-space: nowrap;
+	}
+	.wallet b {
+		color: var(--tr-color-accent);
+		font: 400 clamp(28px, 4cqh, 46px) / 1 var(--tr-font-heading);
+	}
+	.wallet span {
+		font: 400 clamp(16px, 2.4cqh, 24px) / 1 var(--tr-font-heading);
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+	}
+
+	.keys {
+		position: absolute;
+		z-index: 6;
+		right: clamp(16px, 2.6cqw, 40px);
+		bottom: clamp(10px, 2cqh, 18px);
+		display: flex;
+		gap: 14px;
+		padding: 5px 9px 4px;
+		background: var(--tr-color-ink);
+		color: var(--tr-color-text-muted);
+		font: 600 12px/1.3 var(--tr-font-body);
+		letter-spacing: 0.06em;
+	}
+	.keys kbd {
+		margin-inline-end: 5px;
+		padding: 0 4px;
+		background: var(--tr-color-paper);
+		color: var(--tr-color-ink);
+		font: 700 11px/1.3 var(--tr-font-body);
+	}
+
+	/* ── Phones ─────────────────────────────────────────────────────────────── */
+	@media (max-width: 759.98px) {
+		.hud {
+			--hud: 44px;
+			left: 16px;
+			top: 18px;
 		}
-		li.on a {
-			transform: scale(1.18) translate(0.1em, 0.08em) rotate(-1deg);
+		.back {
+			top: 14px;
+			right: 12px;
+			font-size: 18px;
+			padding: 10px 14px 8px 20px;
 		}
-		.strip,
-		.number,
-		.party,
-		.keys .key:not(.close) {
+		.back kbd,
+		.keys,
+		.detail {
 			display: none;
 		}
-		.plate {
-			top: 2vh;
-			left: auto;
-			right: 4vw;
+		.menu {
+			--mfs: clamp(22px, min(8.4cqw, 4.2cqh), 40px);
+			left: 12px;
+			top: clamp(120px, 19cqh, 170px);
+			width: 78%;
 		}
-		.plate-title {
-			font-size: 3.2vh;
+		.menu li {
+			transform: translateX(calc(var(--i) * 2.2cqw)) rotate(var(--r));
 		}
-		.plate-hint {
-			font-size: 1.5vh;
+		.speech {
+			left: 14px;
+			right: 18px;
+			width: auto;
+			bottom: 92px;
 		}
-		.heading {
-			top: auto;
-			bottom: 13vh;
-			left: 5vw;
-			font-size: min(6.5vh, 12vw);
+		.card {
+			padding: 28px 24px 20px 22px;
 		}
-		.hint {
-			top: auto;
-			bottom: 8vh;
-			left: auto;
-			right: 6vw;
-			font-size: 2.3vh;
+		.card-title {
+			font-size: 32px;
 		}
 		.wallet {
-			top: 3vh;
-			left: 5vw;
+			left: 14px;
+			bottom: 18px;
+			gap: 9px;
+			padding: 3px 14px 2px 12px;
+			border-width: 3px;
+			box-shadow: 6px 6px 0 var(--tr-color-accent);
 		}
-		.wallet span {
-			font-size: 3.6vh;
+		.band {
+			top: 30%;
+			height: 24%;
 		}
-		.wallet b {
-			font-size: 4.4vh;
+		.band.thin {
+			top: 27%;
+			height: 1.2%;
 		}
-		.keys {
-			top: auto;
-			bottom: 2.5vh;
-		}
-		.close {
-			font-size: 1.2rem;
+		.burst {
+			width: 110cqw;
+			right: -40%;
+			top: -6%;
 		}
 	}
 
-	@keyframes fade {
-		from {
-			opacity: 0;
-		}
-	}
-	@keyframes pose {
-		from {
-			opacity: 0;
-			transform: translateX(-4%) scale(1.04);
-		}
-	}
-	@keyframes deal {
-		from {
-			opacity: 0;
-			transform: translateX(-60vw) rotate(-20deg);
-		}
-	}
-	@keyframes drop {
-		from {
-			opacity: 0;
-			transform: translateY(-30%) rotate(-14deg) scale(1.3);
-		}
-	}
-	@keyframes number {
-		from {
-			opacity: 0;
-			transform: rotate(-16deg) scale(0.9, 1.6);
-		}
-	}
-	@keyframes shard {
-		from {
-			transform: scaleX(0.1);
-		}
-	}
-	@keyframes hint {
-		from {
-			opacity: 0;
-			transform: translateX(1rem) rotate(-5deg);
+	@media (prefers-reduced-motion: reduce) {
+		.screen,
+		.screen * {
+			animation: none !important;
 		}
 	}
 </style>

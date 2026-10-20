@@ -17,7 +17,7 @@
 <section class="card" class:accent class:wide>
 	{#if title || actions}
 		<header>
-			{#if title}<h2 class="tab"><span>{title}</span></h2>{/if}
+			{#if title}<h2 class="tab">{title}</h2>{/if}
 			{#if actions}<div class="actions">{@render actions()}</div>{/if}
 		</header>
 	{/if}
@@ -50,20 +50,17 @@
 		gap: var(--tr-space-sm) var(--tr-space-md);
 		margin-block-start: calc(var(--tr-space-sm) * -1);
 	}
-	/* The card's name is a slanted paper tag pinned to the left edge. */
+	/* The card's name is a tilted paper plate pinned to the left edge, like the landing page's. */
 	.tab {
 		margin: 0 0 0 calc(var(--tr-space-lg) * -1 - 6px);
-		padding: 3px var(--tr-space-md) 1px calc(var(--tr-space-lg) + 4px);
+		padding: 5px var(--tr-space-md) 3px calc(var(--tr-space-lg) + 4px);
 		background: var(--tr-color-paper);
 		color: var(--tr-color-ink);
 		font-size: var(--tr-text-lg);
 		line-height: 1.1;
-		transform: skewX(var(--tr-skew));
+		box-shadow: 4px 4px 0 var(--tr-color-ink);
+		transform: rotate(-2deg);
 		transform-origin: bottom left;
-	}
-	.tab span {
-		display: inline-block;
-		transform: skewX(calc(var(--tr-skew) * -1));
 	}
 	.accent .tab {
 		background: var(--tr-color-accent);

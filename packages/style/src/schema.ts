@@ -76,7 +76,10 @@ const palette = z.strictObject({
 	paper: color,
 	ink: color,
 	/** The second shard of the menu cursor (cyan in Persona 5). */
-	cursor: color
+	cursor: color,
+	/** The two sisters' accents from the landing page: Makoto's cyan and Sae's gold. */
+	makoto: color,
+	sae: color
 });
 
 export const styleSchema = z.strictObject({
@@ -229,6 +232,15 @@ export const styleSchema = z.strictObject({
 			'sign_out'
 		),
 		empty: wordGroup('dashboard', 'widgets'),
+		loader: wordGroup('text'),
+		palace: wordGroup(
+			'target',
+			'missing_title',
+			'missing_body',
+			'error_title',
+			'error_body',
+			'back'
+		),
 		signin: wordGroup(
 			'kicker',
 			'title',

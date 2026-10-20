@@ -21,5 +21,7 @@ export { default as BarChart } from './BarChart.svelte';
 export { default as Progress } from './Progress.svelte';
 export { default as DateTag } from './DateTag.svelte';
 export { default as Cutout } from './Cutout.svelte';
+export { default as Title } from './Title.svelte';
+export { default as Loader } from './Loader.svelte';
 export { default as CommandScreen } from './CommandScreen.svelte';
-export type { CommandWords, MenuArt, PartyMember } from './types.ts';
+export type { CommandWords, MenuArt } from './types.ts';

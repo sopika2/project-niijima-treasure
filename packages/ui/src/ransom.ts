@@ -36,7 +36,7 @@ export function ransom(text: string, salt = 0): Letter[] {
 				: `var(--tr-font-ransom-${slot}${part}, var(--tr-font-ransom-1${part}))`;
 		const size = first ? 1.22 : 0.92 + ((h >>> 3) % 5) * 0.035;
 		const lift = (((h >>> 7) % 5) - 2) * 0.03;
-		const turn = (((h >>> 9) % 7) - 3) * 1.2;
+		const turn = (((h >>> 9) % 7) - 3) * 2.4; // up to ±7°, like the landing page's tiles
 		const lower = !first && (h >>> 11) % 4 === 0 && /\p{L}/u.test(char);
 		return {
 			char,
