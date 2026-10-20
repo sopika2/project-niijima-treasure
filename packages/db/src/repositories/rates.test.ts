@@ -4,6 +4,7 @@ import { openDatabase } from '../client.ts';
 import { createAccount } from './catalog.ts';
 import {
 	backfillBaseAmounts,
+	currenciesWithoutRates,
 	foreignCurrencies,
 	insertRates,
 	rateHistory,
@@ -69,11 +70,13 @@ describe('exchange rates', () => {
 			)
 		);
 		expect(foreignCurrencies(db, 'HUF')).toEqual(['EUR']);
+		expect(currenciesWithoutRates(db, 'HUF')).toEqual(['EUR']);
 		expect(getTransaction(db, id)?.legs[0]?.baseAmountMinor).toBeNull();
 		insertRates(db, [
 			quote('390', '2026-10-01T08:00:00.000Z'),
 			quote('400', '2026-10-08T08:00:00.000Z')
 		]);
+		expect(currenciesWithoutRates(db, 'HUF')).toEqual([]);
 		expect(backfillBaseAmounts(db, 'HUF')).toBe(1);
 		expect(getTransaction(db, id)?.legs[0]).toMatchObject({
 			baseAmountMinor: -390000,

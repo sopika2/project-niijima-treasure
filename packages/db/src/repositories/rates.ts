@@ -182,6 +182,25 @@ export function backfillBaseAmounts(db: Db, base: string): number {
 }
 
 /** Currencies of accounts and entries that are not the base currency. */
+/** Foreign currencies in use that have no rate to `base` stored at all. */
+export function currenciesWithoutRates(db: Db, base: string): string[] {
+	return foreignCurrencies(db, base).filter(
+		(currency) =>
+			!db
+				.select({ id: exchangeRates.id })
+				.from(exchangeRates)
+				.where(
+					and(
+						eq(exchangeRates.currency, currency),
+						eq(exchangeRates.quoteCurrency, base),
+						inArray(exchangeRates.rateType, VALUATION)
+					)
+				)
+				.limit(1)
+				.get()
+	);
+}
+
 export function foreignCurrencies(db: Db, base: string): string[] {
 	const rows = db.all<{ currency: string }>(
 		sql`select currency from accounts where currency != ${base} union select currency from transaction_legs where currency != ${base} order by currency`

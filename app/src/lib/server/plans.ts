@@ -71,6 +71,10 @@ export interface GoalRow extends GoalStatus {
 }
 
 const LOOKBACK_DAYS = 90;
+/** Shortest span a pace is measured over, so one deposit in the first days isn't read as a habit. */
+const MIN_PACE_DAYS = 14;
+const daysBetween = (from: string, to: string) =>
+	Math.round((Date.parse(to) - Date.parse(from)) / 86_400_000);
 
 /**
  * Every Treasure with its progress. A Treasure tied to an account counts that account's balance
@@ -92,6 +96,7 @@ export function goalRows(app: Runtime, options: { includeArchived?: boolean } = 
 	return listGoals(db, options).map((goal) => {
 		let saved: number;
 		let recent: number;
+		let days = LOOKBACK_DAYS;
 		const linked = goal.accountId ? now.get(goal.accountId) : undefined;
 		if (linked) {
 			const inGoalCurrency = (amount: number) =>
@@ -99,13 +104,21 @@ export function goalRows(app: Runtime, options: { includeArchived?: boolean } = 
 					? amount
 					: (toBase(app, amount, linked.account.currency) ?? 0);
 			saved = inGoalCurrency(linked.balanceMinor);
-			recent = inGoalCurrency(linked.balanceMinor - (before.get(linked.account.id) ?? 0));
+			// An account opened within the lookback grew from its starting balance, not from 0:
+			// counting from 0 would read the whole starting balance as recent saving.
+			const { openingDate, openingBalanceMinor } = linked.account;
+			if (openingDate > since) {
+				recent = inGoalCurrency(linked.balanceMinor - openingBalanceMinor);
+				days = Math.max(MIN_PACE_DAYS, daysBetween(openingDate, day));
+			} else {
+				recent = inGoalCurrency(linked.balanceMinor - (before.get(linked.account.id) ?? 0));
+			}
 		} else {
 			const totals = contributionTotals(db, goal.id, since);
 			saved = totals.total;
 			recent = totals.recent;
 		}
-		const recentPerMonthMinor = Math.max(0, Math.round((recent / LOOKBACK_DAYS) * 30.44));
+		const recentPerMonthMinor = Math.max(0, Math.round((recent / days) * 30.44));
 		return {
 			id: goal.id,
 			name: goal.name,

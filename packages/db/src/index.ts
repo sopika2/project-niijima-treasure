@@ -3,7 +3,7 @@ export * from './schema.ts';
 export { openDatabase, getSetting, setSetting, totalChanges } from './client.ts';
 export type { Db, Treasury, OpenOptions } from './client.ts';
 export { exportDefinitions } from './definitions.ts';
-export { accountBalances } from './repositories/accounts.ts';
+export { accountBalances, trackingStart } from './repositories/accounts.ts';
 export type { AccountBalance } from './repositories/accounts.ts';
 export {
 	insertRates,
@@ -13,7 +13,8 @@ export {
 	currentRates,
 	rateHistory,
 	backfillBaseAmounts,
-	foreignCurrencies
+	foreignCurrencies,
+	currenciesWithoutRates
 } from './repositories/rates.ts';
 export type { CurrentRate } from './repositories/rates.ts';
 export {

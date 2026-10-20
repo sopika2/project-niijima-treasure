@@ -306,6 +306,7 @@ copy:
     date: Date
     note: Note
     note_placeholder: What was it?
+    before_opening: "This is before {account}'s starting balance date, so the balance already includes it. It still counts in reports."
     name: Name
     type: Type
     currency: Currency
@@ -426,7 +427,8 @@ copy:
     lowest: Lowest point
     month_end: End of month
     horizon_end: End of forecast
-    basis_average: Everyday spending from your last {months} month(s)
+    basis_average: Everyday spending, {months}-month average
+    basis_average_days: Everyday spending over the {days} days you've tracked
     basis_fixed: Everyday spending set in config.yml
     what_if: What if
     what_if_hint: Try a one-off purchase without saving it.

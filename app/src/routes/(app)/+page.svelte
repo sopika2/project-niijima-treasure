@@ -193,9 +193,11 @@
 			{markers}
 		/>
 		<p class="basis">
-			{data.forecast.basis === 'average'
-				? fill(words.basis_average, { months: data.forecast.months })
-				: words.basis_fixed}:
+			{data.forecast.basis === 'fixed'
+				? words.basis_fixed
+				: data.forecast.days !== null
+					? fill(words.basis_average_days, { days: data.forecast.days })
+					: fill(words.basis_average, { months: data.forecast.months })}:
 			<Money amount={Math.round(data.forecast.dailySpend * 30.44)} currency={ui.baseCurrency} />
 			{copy.recurring.per_month}
 		</p>
