@@ -19,6 +19,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { Button, Field, Segmented, useUi } from '@treasure/ui';
+	import { ordinal } from '#lib/format.ts';
 	import { errorText, submitter, type Errors } from '#lib/forms.ts';
 	import type { AccountOption, CategoryOption } from '#lib/types.ts';
 
@@ -59,11 +60,12 @@
 		{ value: 'income' as const, label: ui.copy.terms.income, tone: 'income' as const },
 		{ value: 'transfer' as const, label: ui.copy.terms.transfer, tone: 'neutral' as const }
 	]);
+	const many = $derived(Number(values.interval) > 1);
 	const units = $derived([
-		{ value: 'daily', label: words.unit_daily },
-		{ value: 'weekly', label: words.unit_weekly },
-		{ value: 'monthly', label: words.unit_monthly },
-		{ value: 'yearly', label: words.unit_yearly }
+		{ value: 'daily', label: many ? words.units_daily : words.unit_daily },
+		{ value: 'weekly', label: many ? words.units_weekly : words.unit_weekly },
+		{ value: 'monthly', label: many ? words.units_monthly : words.unit_monthly },
+		{ value: 'yearly', label: many ? words.units_yearly : words.unit_yearly }
 	]);
 	/** The day the first date falls on is the natural default for "day of the month". */
 	const startDay = $derived(Number(values.date.slice(8, 10)) || 1);
@@ -167,9 +169,10 @@
 		{#if values.freq === 'monthly'}
 			<Field label={words.day_of_month} for="{uid}-day" error={message('dayOfMonth')}>
 				<select id="{uid}-day" name="dayOfMonth" bind:value={values.dayOfMonth}>
-					<option value="">{startDay}.</option>
+					<option value="">{ordinal(startDay, ui.locale)}</option>
 					{#each Array.from({ length: 31 }, (_, i) => i + 1) as day (day)}
-						{#if day !== startDay}<option value={String(day)}>{day}.</option>{/if}
+						{#if day !== startDay}<option value={String(day)}>{ordinal(day, ui.locale)}</option
+							>{/if}
 					{/each}
 					<option value="-1">{words.last_day}</option>
 				</select>

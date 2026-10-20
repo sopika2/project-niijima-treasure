@@ -133,12 +133,17 @@
 		place-items: center;
 		width: 2.25rem;
 		height: 2.25rem;
-		color: var(--mark);
-		background: color-mix(in srgb, var(--mark) 16%, transparent);
+		/* the tile carries the category's colour, the arrow says which way the money went */
+		color: var(--tr-color-expense);
+		background: color-mix(in srgb, var(--mark) 22%, transparent);
 		clip-path: polygon(12% 0, 100% 0, 88% 100%, 0 100%);
+	}
+	[data-kind='income'] .mark {
+		color: var(--tr-color-income);
 	}
 	[data-kind='transfer'] .mark {
 		--mark: var(--tr-color-secondary);
+		color: var(--tr-color-secondary);
 	}
 	.text {
 		display: grid;

@@ -114,7 +114,12 @@
 </form>
 
 {#if data.totals.missingRates > 0}
-	<Notice tone="info" title={ui.copy.status.missing_rates}>{data.totals.missingRates}</Notice>
+	<Notice
+		tone="info"
+		title={data.totals.missingRates === 1
+			? ui.copy.status.missing_entries_one
+			: ui.copy.status.missing_entries.replace('{count}', String(data.totals.missingRates))}
+	/>
 {/if}
 
 {#if data.rows.length === 0}

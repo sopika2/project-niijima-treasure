@@ -62,9 +62,20 @@
 		open = true;
 	}
 	const current = $derived(nav.find((item) => item.active));
+
+	/* The floating Add button steps aside while you scroll down a list, so it never sits on
+	   the amount you're reading, and comes back as soon as you scroll up. */
+	let tucked = $state(false);
+	let lastY = 0;
+	function scrolled() {
+		const y = window.scrollY;
+		if (Math.abs(y - lastY) < 8) return;
+		tucked = y > lastY && y > 80;
+		lastY = y;
+	}
 </script>
 
-<svelte:window onkeydown={key} />
+<svelte:window onkeydown={key} onscroll={scrolled} />
 
 <div class="shell">
 	<header class="top" inert={open}>
@@ -121,6 +132,7 @@
 		<button
 			type="button"
 			class="action action-float"
+			class:tucked
 			onclick={action.onclick}
 			aria-label={action.label}
 			inert={open}
@@ -275,6 +287,10 @@
 		place-items: center;
 		width: 3.75rem;
 		height: 3.75rem;
+		transition: translate var(--tr-duration-normal) var(--tr-ease-standard);
+	}
+	.action-float.tucked {
+		translate: calc(100% + var(--tr-space-md) + 12px) 0;
 	}
 
 	/* ── navigation: sidebar ──────────────────────────────────────────────── */

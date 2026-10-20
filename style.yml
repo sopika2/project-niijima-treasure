@@ -252,9 +252,9 @@ copy:
     title: Activity
     empty: Nothing logged in this month.
     search: Search notes
-    all_accounts: All accounts
-    all_categories: All categories
-    all_kinds: Everything
+    all_accounts: Accounts
+    all_categories: Categories
+    all_kinds: All types
     uncategorized: Uncategorized
     edit: Edit transaction
     delete_confirm: Delete this transaction? Older backups still keep it.
@@ -355,10 +355,15 @@ copy:
     amount_varies: The amount changes
     amount_varies_hint: You'll be asked for the real amount every time.
     every: Every
-    unit_daily: day(s)
-    unit_weekly: week(s)
-    unit_monthly: month(s)
-    unit_yearly: year(s)
+    unit_daily: day
+    unit_weekly: week
+    unit_monthly: month
+    unit_yearly: year
+    units_daily: days
+    units_weekly: weeks
+    units_monthly: months
+    units_yearly: years
+    on_day: on the {day}
     day_of_month: Day of the month
     last_day: Last day
     starts: First date
@@ -416,7 +421,8 @@ copy:
     budget_warn: '{name} has used {percent} of its budget.'
     budget_pace: '{name} is on pace to go over its budget.'
     balance_floor: 'Your balance is projected to drop to {amount} on {date}.'
-    pending: '{count} recurring item(s) waiting for you to confirm.'
+    pending: '{count} recurring items are waiting for you to confirm.'
+    pending_one: 'A recurring item is waiting for you to confirm.'
     goal_late: '{name} is behind schedule.'
     rates_failed: Exchange rates could not be fetched.
     rates_stale: 'Exchange rates are {days} days old.'
@@ -506,6 +512,8 @@ copy:
     rates_ok: Up to date
     rates_never: Not fetched yet
     missing_rates: 'Left out of the total until an exchange rate is known:'
+    missing_entries: '{count} entries are left out until their exchange rate is known.'
+    missing_entries_one: 'One entry is left out until its exchange rate is known.'
 
 # ── Assets ───────────────────────────────────────────────────────────────────
 assets:

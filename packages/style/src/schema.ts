@@ -362,6 +362,11 @@ export const styleSchema = z.strictObject({
 			'unit_weekly',
 			'unit_monthly',
 			'unit_yearly',
+			'units_daily',
+			'units_weekly',
+			'units_monthly',
+			'units_yearly',
+			'on_day',
 			'day_of_month',
 			'last_day',
 			'starts',
@@ -423,6 +428,7 @@ export const styleSchema = z.strictObject({
 			'budget_pace',
 			'balance_floor',
 			'pending',
+			'pending_one',
 			'goal_late',
 			'rates_failed',
 			'rates_stale',
@@ -516,7 +522,9 @@ export const styleSchema = z.strictObject({
 			'drive_missing',
 			'rates_ok',
 			'rates_never',
-			'missing_rates'
+			'missing_rates',
+			'missing_entries',
+			'missing_entries_one'
 		)
 	}),
 	assets: z.strictObject({
