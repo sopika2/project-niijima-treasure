@@ -5,6 +5,8 @@ export interface AccountOption {
 	readonly name: string;
 	readonly type: string;
 	readonly currency: string;
+	/** The date its starting balance is for (YYYY-MM-DD). */
+	readonly openingDate: string;
 }
 
 export interface CategoryOption {

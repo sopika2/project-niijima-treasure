@@ -38,11 +38,16 @@ describe('accountBalances', () => {
 			})
 			.run();
 
-		const leg = (status: 'posted' | 'pending', amount: number, deleted = false) => {
+		const leg = (
+			status: 'posted' | 'pending',
+			amount: number,
+			deleted = false,
+			date = '2026-10-10'
+		) => {
 			const [tx] = db
 				.insert(transactions)
 				.values({
-					date: '2026-10-10',
+					date,
 					kind: 'expense',
 					status,
 					deletedAt: deleted ? '2026-10-11' : null
@@ -63,12 +68,19 @@ describe('accountBalances', () => {
 		leg('posted', -500_00);
 		leg('pending', -9_999_00);
 		leg('posted', -1_000_00, true);
+		// Before the opening date: already in the opening balance.
+		leg('posted', -4_000_00, false, '2026-09-20');
+		// On the opening date itself: counts.
+		leg('posted', -100_00, false, '2026-10-01');
 
 		const balances = accountBalances(db);
 		expect(balances.map((row) => [row.account.name, row.balanceMinor])).toEqual([
-			['OTP HUF', 7_000_00],
+			['OTP HUF', 6_900_00],
 			['Cash', 0]
 		]);
+		// Before the account's opening date there is no balance yet.
+		expect(accountBalances(db, { asOf: '2026-09-30' })[0]!.balanceMinor).toBe(0);
+		expect(accountBalances(db, { asOf: '2026-10-05' })[0]!.balanceMinor).toBe(9_900_00);
 		close();
 	});
 });

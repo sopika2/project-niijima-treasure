@@ -84,7 +84,13 @@ export function fieldErrors(error: unknown): FieldErrors {
 /* ── What the screens show ───────────────────────────────────────────────── */
 
 export function accountOption(account: Account): AccountOption {
-	return { id: account.id, name: account.name, type: account.type, currency: account.currency };
+	return {
+		id: account.id,
+		name: account.name,
+		type: account.type,
+		currency: account.currency,
+		openingDate: account.openingDate
+	};
 }
 
 export function categoryOption(category: Category): CategoryOption {

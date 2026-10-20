@@ -20,6 +20,7 @@ import {
 	DriveUnavailableError,
 	openDatabase,
 	ratesFreshness,
+	currenciesWithoutRates,
 	restoreIfMissing,
 	seedCategories,
 	snapshotKeyFrom,
@@ -318,8 +319,14 @@ async function boot(): Promise<Runtime> {
 
 	self = app;
 	postDueItems(app);
-	// Fetch rates at start unless the stored ones are from the last six hours.
+	// Fetch rates at start unless the stored ones are from the last six hours and cover every
+	// currency in use.
 	const newest = ratesFreshness(treasury.db);
-	if (!newest || Date.now() - Date.parse(newest) > 6 * 3_600_000) void rates.refresh();
+	if (
+		!newest ||
+		Date.now() - Date.parse(newest) > 6 * 3_600_000 ||
+		currenciesWithoutRates(treasury.db, config.base_currency).length > 0
+	)
+		void rates.refresh();
 	return app;
 }

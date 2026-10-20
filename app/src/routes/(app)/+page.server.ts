@@ -80,6 +80,7 @@ export const load: PageServerLoad = async () => {
 			dailySpend: ahead.dailySpendMinor,
 			basis: ahead.basis,
 			months: ahead.months,
+			days: ahead.days,
 			floor: app.config.alerts.balance_floor * 100
 		},
 		upcoming: upcomingEvents(app, addDays(day, 21)).slice(0, 8)

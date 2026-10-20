@@ -67,6 +67,13 @@
 
 	const from = $derived(accounts.find((account) => account.id === values.accountId));
 	const to = $derived(accounts.find((account) => account.id === values.toAccountId));
+	// An entry before an account's starting balance date is already part of that balance.
+	const beforeOpening = $derived.by(() => {
+		const early = [from, values.kind === 'transfer' ? to : undefined].find(
+			(account) => account && values.date && values.date < account.openingDate
+		);
+		return early ? ui.copy.form.before_opening.replace('{account}', early.name) : undefined;
+	});
 	const crossCurrency = $derived(
 		values.kind === 'transfer' && !!from && !!to && from.currency !== to.currency
 	);
@@ -179,7 +186,12 @@
 				</select>
 			</Field>
 		{:else}
-			<Field label={ui.copy.form.date} for="{uid}-date" error={message('date')}>
+			<Field
+				label={ui.copy.form.date}
+				for="{uid}-date"
+				error={message('date')}
+				hint={beforeOpening}
+			>
 				<input id="{uid}-date" type="date" name="date" bind:value={values.date} />
 			</Field>
 		{/if}
@@ -202,7 +214,7 @@
 	{/if}
 
 	{#if values.kind === 'transfer'}
-		<Field label={ui.copy.form.date} for="{uid}-date" error={message('date')}>
+		<Field label={ui.copy.form.date} for="{uid}-date" error={message('date')} hint={beforeOpening}>
 			<input id="{uid}-date" type="date" name="date" bind:value={values.date} />
 		</Field>
 	{:else}
@@ -260,6 +272,7 @@
 	.pair {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
+		align-items: start;
 		gap: var(--tr-space-md);
 	}
 	.amount-input {
