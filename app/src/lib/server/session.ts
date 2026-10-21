@@ -12,6 +12,32 @@ interface Payload extends SessionUser {
 }
 
 export const SESSION_COOKIE = 'treasure_session';
+/** The cookie every Niijima app reads when sign-in is shared across the domain (SESSION_DOMAIN). */
+export const SHARED_SESSION_COOKIE = 'nj_session';
+
+/** Where the sign-in cookie lives: this app only, or the whole domain. */
+export interface SessionCookie {
+	readonly name: string;
+	readonly domain: string | undefined;
+}
+
+export function sessionCookie(domain: string | undefined): SessionCookie {
+	return domain
+		? { name: SHARED_SESSION_COOKIE, domain }
+		: { name: SESSION_COOKIE, domain: undefined };
+}
+
+/** Options for setting the sign-in cookie. */
+export function sessionCookieOptions(cookie: SessionCookie, secure: boolean) {
+	return {
+		path: '/',
+		domain: cookie.domain,
+		httpOnly: true,
+		sameSite: 'lax' as const,
+		secure,
+		maxAge: SESSION_DAYS * 86_400
+	};
+}
 /** About as long as browsers allow a cookie to live (400 days). Renewed on use, so it never runs out while you use the app. */
 export const SESSION_DAYS = 395;
 /** Renew the cookie once it is a day old. */

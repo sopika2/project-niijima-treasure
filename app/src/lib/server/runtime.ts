@@ -4,6 +4,7 @@ import {
 	DISCORD_CLIENT_SECRET,
 	DISCORD_WEBHOOK_URL,
 	PUBLIC_URL,
+	SESSION_DOMAIN,
 	SESSION_SECRET,
 	SNAPSHOT_KEY,
 	SUMMARY_TOKEN,
@@ -146,7 +147,8 @@ function accessGate(config: Config): AccessGate {
 			redirectUri: `${PUBLIC_URL!.replace(/\/+$/, '')}/auth/callback`
 		},
 		sessionSecret: SESSION_SECRET!,
-		allowedIds: config.access.discord_user_ids
+		allowedIds: config.access.discord_user_ids,
+		domain: SESSION_DOMAIN
 	});
 }
 

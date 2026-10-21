@@ -57,6 +57,17 @@ export const variables = defineEnvVars({
 		description: 'Random string that signs login cookies (openssl rand -hex 32).',
 		schema: optional
 	},
+	SESSION_DOMAIN: {
+		description:
+			'Parent domain (e.g. niijimasisters.com) to share sign-in with every Niijima app that has the same SESSION_SECRET. Empty: this app only.',
+		schema: (value) => {
+			const domain = optional(value)?.replace(/^\./, '');
+			if (domain && !/^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(domain)) {
+				throw new Error('SESSION_DOMAIN must be a domain name like niijimasisters.com');
+			}
+			return domain;
+		}
+	},
 	PUBLIC_URL: {
 		description: 'The address people open, e.g. https://treasure.niijimasisters.com',
 		schema: optional

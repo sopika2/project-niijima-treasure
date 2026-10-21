@@ -1,11 +1,16 @@
+import { addDays } from '@treasure/core';
+import type { Scope } from '@treasure/db';
+import { monthRange, today } from './ledger.ts';
+import { budgetRows, goalRows } from './plans.ts';
+import { projection } from './projection.ts';
+import { upcomingEvents } from './recurring.ts';
 import type { Runtime } from './runtime.ts';
 import { statsReader } from './stats.ts';
+import { verdicts } from './verdicts.ts';
 
 /**
  * What the Niijima Network homepage shows. Read-only, numbers only, in minor units of the base
- * currency (divide by 100 for forints). Fields fill in as later milestones land: `projected`
- * with the projection engine, `next_bills` with recurring items, `budgets_over_warn` with budgets
- * and `treasures` with savings goals.
+ * currency (divide by 100 for forints). With a scope, only that sister's money and the shared.
  */
 export interface Summary {
 	readonly as_of: string;
@@ -35,9 +40,17 @@ export interface Summary {
 	readonly rates_as_of: string | null;
 }
 
-export async function buildSummary(runtime: Runtime): Promise<Summary> {
-	const stats = statsReader(runtime);
-	const [system, accounts] = await Promise.all([stats.system(), stats.accounts()]);
+export async function buildSummary(runtime: Runtime, scope?: Scope): Promise<Summary> {
+	const stats = statsReader(runtime, scope);
+	const { day, month } = today(runtime);
+	const monthEnd = monthRange(month).to;
+	const [system, accounts, ahead, alerts] = await Promise.all([
+		stats.system(),
+		stats.accounts(),
+		projection(runtime, daysBetween(day, monthEnd), [], scope),
+		verdicts(runtime, scope)
+	]);
+	const end = ahead.points.find((point) => point.date === monthEnd) ?? ahead.end;
 	return {
 		as_of: new Date().toISOString(),
 		app_version: runtime.version,
@@ -50,12 +63,25 @@ export async function buildSummary(runtime: Runtime): Promise<Summary> {
 			currency: account.balance.currency
 		})),
 		missing_rates: accounts.missingRates,
-		projected: null,
-		next_bills: [],
-		budgets_over_warn: [],
-		treasures: [],
-		verdicts: runtime.problems().filter((problem) => problem.tone !== 'info').length,
+		projected: {
+			end_of_month: end.balanceMinor,
+			lowest_this_month: ahead.lowest.balanceMinor
+		},
+		next_bills: upcomingEvents(runtime, addDays(day, 14), scope)
+			.filter((event) => event.amountMinor < 0)
+			.slice(0, 5)
+			.map((event) => ({ name: event.label, date: event.date, amount: -event.amountMinor })),
+		budgets_over_warn: budgetRows(runtime, month, scope)
+			.filter((row) => row.state === 'over' || row.state === 'warn')
+			.map((row) => ({ category: row.name, percent: Math.round(row.used * 100) })),
+		treasures: goalRows(runtime, { scope })
+			.filter((goal) => !goal.reached)
+			.map((goal) => ({ name: goal.name, percent: Math.round(goal.progress * 100) })),
+		verdicts: alerts.filter((verdict) => verdict.tone !== 'info').length,
 		backup: { state: system.snapshot.state, last_saved_at: system.snapshot.lastSavedAt },
 		rates_as_of: system.ratesAsOf
 	};
 }
+
+const daysBetween = (from: string, to: string) =>
+	Math.round((Date.parse(to) - Date.parse(from)) / 86_400_000);

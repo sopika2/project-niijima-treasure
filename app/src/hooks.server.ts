@@ -3,7 +3,7 @@ import { personaFromCookie } from '@niijima/design';
 import type { Handle, ServerInit } from '@sveltejs/kit/hooks';
 import { htmlAttributes } from '@treasure/style';
 import { runtime } from '#lib/server/runtime.ts';
-import { createSession, SESSION_COOKIE, SESSION_DAYS } from '#lib/server/session.ts';
+import { createSession, sessionCookieOptions } from '#lib/server/session.ts';
 
 /**
  * Reachable without signing in: the container health check, the token-protected homepage feed,
@@ -53,15 +53,9 @@ export const handle: Handle = async ({ event, resolve }) => {
 		// Sliding login: each visit pushes the expiry forward, so you only sign in once.
 		if (user.renew) {
 			event.cookies.set(
-				SESSION_COOKIE,
+				app.access.cookie.name,
 				createSession(event.locals.user, app.access.sessionSecret),
-				{
-					path: '/',
-					httpOnly: true,
-					sameSite: 'lax',
-					secure: event.url.protocol === 'https:',
-					maxAge: SESSION_DAYS * 86_400
-				}
+				sessionCookieOptions(app.access.cookie, event.url.protocol === 'https:')
 			);
 		}
 	}
