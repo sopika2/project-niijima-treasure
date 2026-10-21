@@ -119,7 +119,6 @@ function accessGate(config: Config): AccessGate {
 	const missing = Object.entries({
 		DISCORD_CLIENT_ID,
 		DISCORD_CLIENT_SECRET,
-		DISCORD_WEBHOOK_URL,
 		SESSION_SECRET,
 		PUBLIC_URL
 	})
