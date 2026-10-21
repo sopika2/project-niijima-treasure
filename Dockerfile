@@ -27,7 +27,9 @@ COPY packages/ui/package.json packages/ui/
 RUN pnpm install --frozen-lockfile
 
 COPY . .
-RUN pnpm build
+# The address the app is opened at (compose.yml passes it from TREASURE_HOST).
+ARG TREASURE_ORIGIN=https://treasure.niijimasisters.com
+RUN TREASURE_ORIGIN="$TREASURE_ORIGIN" pnpm build
 
 # The server bundle contains everything except better-sqlite3; install just that.
 RUN mkdir /runtime \

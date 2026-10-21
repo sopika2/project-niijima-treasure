@@ -8,7 +8,10 @@
 
 services:
   treasure:
-    build: .
+    build:
+      context: .
+      args:
+        TREASURE_ORIGIN: https://${TREASURE_HOST:-treasure.niijimasisters.com}
     image: niijima/treasure:latest
     container_name: niijima-treasure
     restart: unless-stopped
