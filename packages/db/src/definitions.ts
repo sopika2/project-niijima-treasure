@@ -25,7 +25,8 @@ export function exportDefinitions(db: Db, generatedAt = new Date()): string {
 			opening_balance_minor: row.openingBalanceMinor,
 			opening_date: row.openingDate,
 			include_in_total: row.includeInTotal,
-			archived: row.archived
+			archived: row.archived,
+			owner: row.owner
 		})),
 		categories: categories.map((row) => ({
 			id: row.id,
@@ -55,7 +56,8 @@ export function exportDefinitions(db: Db, generatedAt = new Date()): string {
 			month: row.month,
 			limit_minor: row.limitMinor,
 			currency: row.currency,
-			rollover: row.rollover
+			rollover: row.rollover,
+			owner: row.owner
 		})),
 		treasures: goals.map((row) => ({
 			id: row.id,
@@ -64,7 +66,8 @@ export function exportDefinitions(db: Db, generatedAt = new Date()): string {
 			currency: row.currency,
 			deadline: row.deadline,
 			account_id: row.accountId,
-			archived: row.archived
+			archived: row.archived,
+			owner: row.owner
 		}))
 	};
 	return stringify(document, { lineWidth: 0 });

@@ -16,6 +16,7 @@
 	} from '@treasure/ui';
 	import { notify } from '#lib/toast.svelte.ts';
 	import type { SubmitFunction } from '$app/forms';
+	import OwnerField from '#lib/components/OwnerField.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -121,6 +122,8 @@
 					<span class="top">
 						<span class="type">{typeLabel(account.type)}</span>
 						{#if !account.includeInTotal}<Badge>{words.excluded}</Badge>{/if}
+						{#if account.owner !== data.persona}<Badge>{ui.copy.personas[account.owner]}</Badge
+							>{/if}
 					</span>
 					<span class="name">{account.name}</span>
 					<Money amount={account.balance} currency={account.currency} size="lg" />
@@ -323,6 +326,7 @@
 			<input type="checkbox" name="includeInTotal" bind:checked={accountValues.includeInTotal} />
 			{words.include_in_total}
 		</label>
+		<OwnerField value={editing && editing !== 'new' ? editing.owner : data.persona} />
 		{#if accountErrors.form}<p class="form-error">{error(accountErrors, 'form')}</p>{/if}
 		<Button type="submit">{ui.copy.actions.save}</Button>
 	</form>

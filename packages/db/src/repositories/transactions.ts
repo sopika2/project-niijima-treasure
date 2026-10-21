@@ -1,6 +1,7 @@
 import type { PlannedTransaction } from '@treasure/core';
 import { and, between, desc, eq, inArray, isNull, like, not, or, sql, type SQL } from 'drizzle-orm';
 import type { Db } from '../client.ts';
+import { legInScope, type Scope } from '../scope.ts';
 import {
 	recurringRules,
 	transactionLegs,
@@ -127,6 +128,8 @@ export interface TransactionFilter {
 	readonly search?: string;
 	readonly status?: 'posted' | 'pending';
 	readonly limit?: number;
+	/** Only transactions with an entry on an account this scope can see. */
+	readonly scope?: Scope | null;
 }
 
 /** Newest first. Deleted transactions never appear. */
@@ -142,6 +145,17 @@ export function listTransactions(db: Db, filter: TransactionFilter = {}): Stored
 			.replace(/[\\%_]/g, (match) => `\\${match}`);
 		conditions.push(
 			sql`lower(coalesce(${transactions.note}, '')) like ${`%${escaped}%`} escape '\\'`
+		);
+	}
+	if (filter.scope) {
+		conditions.push(
+			inArray(
+				transactions.id,
+				db
+					.select({ id: transactionLegs.transactionId })
+					.from(transactionLegs)
+					.where(legInScope(db, filter.scope))
+			)
 		);
 	}
 	if (filter.accountId || filter.categoryId) {
@@ -179,7 +193,7 @@ export interface PeriodTotals {
 const live = () => and(isNull(transactions.deletedAt), eq(transactions.status, 'posted'));
 
 /** Income and spending between two dates (inclusive). Transfers are neither. */
-export function periodTotals(db: Db, from: string, to: string): PeriodTotals {
+export function periodTotals(db: Db, from: string, to: string, scope?: Scope | null): PeriodTotals {
 	const row = db
 		.select({
 			income: sql<number>`coalesce(sum(case when ${transactions.kind} = 'income' then ${transactionLegs.baseAmountMinor} end), 0)`,
@@ -188,7 +202,7 @@ export function periodTotals(db: Db, from: string, to: string): PeriodTotals {
 		})
 		.from(transactionLegs)
 		.innerJoin(transactions, eq(transactions.id, transactionLegs.transactionId))
-		.where(and(live(), between(transactions.date, from, to)))
+		.where(and(live(), between(transactions.date, from, to), legInScope(db, scope)))
 		.get();
 	return {
 		incomeMinor: Number(row?.income ?? 0),
@@ -205,7 +219,12 @@ export interface CategorySpending {
 }
 
 /** Spending per category between two dates, biggest first. */
-export function spendingByCategory(db: Db, from: string, to: string): CategorySpending[] {
+export function spendingByCategory(
+	db: Db,
+	from: string,
+	to: string,
+	scope?: Scope | null
+): CategorySpending[] {
 	return db
 		.select({
 			categoryId: transactionLegs.categoryId,
@@ -214,7 +233,14 @@ export function spendingByCategory(db: Db, from: string, to: string): CategorySp
 		})
 		.from(transactionLegs)
 		.innerJoin(transactions, eq(transactions.id, transactionLegs.transactionId))
-		.where(and(live(), eq(transactions.kind, 'expense'), between(transactions.date, from, to)))
+		.where(
+			and(
+				live(),
+				eq(transactions.kind, 'expense'),
+				between(transactions.date, from, to),
+				legInScope(db, scope)
+			)
+		)
 		.groupBy(transactionLegs.categoryId)
 		.all()
 		.map((row) => ({ ...row, amountMinor: Number(row.amountMinor), count: Number(row.count) }))
@@ -243,7 +269,7 @@ export function postPending(db: Db, id: string): boolean {
  * Average everyday spending per day between two dates, in the base currency: expenses that did
  * not come from a recurring item (those are already in the projection on their own).
  */
-export function averageDailySpend(db: Db, from: string, to: string): number {
+export function averageDailySpend(db: Db, from: string, to: string, scope?: Scope | null): number {
 	// Bills that are now recurring items but were logged by hand before are already in the
 	// forecast as recurring events; counting them here as well would add them twice.
 	const rules = db
@@ -270,6 +296,7 @@ export function averageDailySpend(db: Db, from: string, to: string): number {
 				eq(transactions.kind, 'expense'),
 				isNull(transactions.recurringId),
 				between(transactions.date, from, to),
+				legInScope(db, scope),
 				asRecurring.length > 0 ? not(or(...asRecurring)!) : undefined
 			)
 		)
@@ -284,7 +311,12 @@ export interface MonthTotals extends PeriodTotals {
 }
 
 /** Income and spending per month between two dates, oldest first; months with nothing are 0. */
-export function monthlyTotals(db: Db, from: string, to: string): MonthTotals[] {
+export function monthlyTotals(
+	db: Db,
+	from: string,
+	to: string,
+	scope?: Scope | null
+): MonthTotals[] {
 	const rows = db
 		.select({
 			month: sql<string>`substr(${transactions.date}, 1, 7)`,
@@ -294,7 +326,7 @@ export function monthlyTotals(db: Db, from: string, to: string): MonthTotals[] {
 		})
 		.from(transactionLegs)
 		.innerJoin(transactions, eq(transactions.id, transactionLegs.transactionId))
-		.where(and(live(), between(transactions.date, from, to)))
+		.where(and(live(), between(transactions.date, from, to), legInScope(db, scope)))
 		.groupBy(sql`substr(${transactions.date}, 1, 7)`)
 		.all();
 	const byMonth = new Map(rows.map((row) => [row.month, row]));
@@ -315,7 +347,7 @@ export function monthlyTotals(db: Db, from: string, to: string): MonthTotals[] {
 }
 
 /** Every live transaction with its entries between two dates, oldest first, for exports. */
-export function exportRows(db: Db, from: string, to: string) {
+export function exportRows(db: Db, from: string, to: string, scope?: Scope | null) {
 	return db
 		.select({
 			id: transactions.id,
@@ -332,7 +364,13 @@ export function exportRows(db: Db, from: string, to: string) {
 		})
 		.from(transactionLegs)
 		.innerJoin(transactions, eq(transactions.id, transactionLegs.transactionId))
-		.where(and(isNull(transactions.deletedAt), between(transactions.date, from, to)))
+		.where(
+			and(
+				isNull(transactions.deletedAt),
+				between(transactions.date, from, to),
+				legInScope(db, scope)
+			)
+		)
 		.orderBy(transactions.date, transactions.createdAt, transactionLegs.amountMinor)
 		.all();
 }

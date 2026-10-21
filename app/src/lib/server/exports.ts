@@ -4,7 +4,8 @@ import {
 	listAccounts,
 	listCategories,
 	rateHistory,
-	foreignCurrencies
+	foreignCurrencies,
+	type Scope
 } from '@treasure/db';
 import { mkdirSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -35,7 +36,7 @@ function cell(value: string | number | null): string {
 	return /[",\n\r;]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
-function rows(app: Runtime, from: string, to: string) {
+function rows(app: Runtime, from: string, to: string, scope?: Scope) {
 	const { db } = app.treasury;
 	const base = app.config.base_currency;
 	const accounts = new Map(
@@ -44,7 +45,7 @@ function rows(app: Runtime, from: string, to: string) {
 	const categories = new Map(
 		listCategories(db, { includeArchived: true }).map((row) => [row.id, row.name])
 	);
-	return exportRows(db, from, to).map((row) => ({
+	return exportRows(db, from, to, scope).map((row) => ({
 		date: row.date,
 		kind: row.kind,
 		status: row.status,
@@ -62,16 +63,16 @@ function rows(app: Runtime, from: string, to: string) {
 }
 
 /** One line per account entry (a transfer has two), decimal point, UTF-8 with a BOM for Excel. */
-export function transactionsCsv(app: Runtime, from: string, to: string): string {
+export function transactionsCsv(app: Runtime, from: string, to: string, scope?: Scope): string {
 	const lines = [HEADER.join(',')];
-	for (const row of rows(app, from, to)) {
+	for (const row of rows(app, from, to, scope)) {
 		lines.push(HEADER.map((key) => cell(row[key as keyof typeof row] ?? null)).join(','));
 	}
 	return `\uFEFF${lines.join('\r\n')}\r\n`;
 }
 
-export function transactionsJson(app: Runtime, from: string, to: string): string {
-	return `${JSON.stringify({ from, to, generated_at: new Date().toISOString(), entries: rows(app, from, to) }, null, 2)}\n`;
+export function transactionsJson(app: Runtime, from: string, to: string, scope?: Scope): string {
+	return `${JSON.stringify({ from, to, generated_at: new Date().toISOString(), entries: rows(app, from, to, scope) }, null, 2)}\n`;
 }
 
 function writeAtomic(path: string, text: string): void {

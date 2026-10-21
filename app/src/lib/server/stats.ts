@@ -5,14 +5,18 @@ import {
 	listCategories,
 	periodTotals,
 	ratesFreshness,
-	spendingByCategory
+	spendingByCategory,
+	type Scope
 } from '@treasure/db';
 import type { AccountsData, AccountSummary, SpendingData, StatsReader } from '@treasure/stats-sdk';
 import { categoryOption, isMonth, monthRange, today } from './ledger.ts';
 import type { Runtime } from './runtime.ts';
 
-/** The full read-only data API. Extensions only ever get a restricted copy of it. */
-export function statsReader(runtime: Runtime): StatsReader {
+/**
+ * The full read-only data API. Extensions only ever get a restricted copy of it. With a scope,
+ * money figures cover only that persona's accounts and the shared ones.
+ */
+export function statsReader(runtime: Runtime, scope?: Scope): StatsReader {
 	const { db } = runtime.treasury;
 	const base = runtime.config.base_currency;
 
@@ -39,7 +43,7 @@ export function statsReader(runtime: Runtime): StatsReader {
 			const missing = new Set<string>();
 			let total = 0;
 			const asOf = today(runtime).day;
-			const accounts: AccountSummary[] = accountBalances(db, { asOf }).map(
+			const accounts: AccountSummary[] = accountBalances(db, { asOf, scope }).map(
 				({ account, balanceMinor }) => {
 					const balance = money(balanceMinor, account.currency);
 					let baseBalance: { amount: number; currency: string } | null = balance;
@@ -69,11 +73,11 @@ export function statsReader(runtime: Runtime): StatsReader {
 		async spending(month?: string): Promise<SpendingData> {
 			const chosen = isMonth(month) ? month : today(runtime).month;
 			const { from, to } = monthRange(chosen);
-			const totals = periodTotals(db, from, to);
+			const totals = periodTotals(db, from, to, scope);
 			const names = new Map(
 				listCategories(db, { includeArchived: true }).map((row) => [row.id, row])
 			);
-			const rows = spendingByCategory(db, from, to);
+			const rows = spendingByCategory(db, from, to, scope);
 			return {
 				month: chosen,
 				total: money(totals.expenseMinor, base),

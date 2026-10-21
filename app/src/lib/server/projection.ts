@@ -1,5 +1,5 @@
 import { addDays, projectBalance, type Projection, type ProjectionEvent } from '@treasure/core';
-import { averageDailySpend, trackingStart } from '@treasure/db';
+import { averageDailySpend, trackingStart, type Scope } from '@treasure/db';
 import { today } from './ledger.ts';
 import { upcomingEvents } from './recurring.ts';
 import type { Runtime } from './runtime.ts';
@@ -18,7 +18,10 @@ export interface ProjectionResult extends Projection {
 const MIN_DAYS = 7;
 
 /** Everyday spending per day: the recent average, or the fixed figure from config.yml. */
-export function dailySpend(app: Runtime): {
+export function dailySpend(
+	app: Runtime,
+	scope?: Scope
+): {
 	perDay: number;
 	basis: 'average' | 'fixed';
 	months: number;
@@ -32,11 +35,11 @@ export function dailySpend(app: Runtime): {
 	const windowStart = addDays(day, -Math.round(setting.months * 30.44) + 1);
 	// Days before tracking began aren't zero-spending days; averaging over them would make
 	// the forecast look better than it is for the first months.
-	const started = trackingStart(app.treasury.db);
+	const started = trackingStart(app.treasury.db, scope);
 	const shortened = started !== null && started > windowStart;
 	const from = shortened ? minDate(started, addDays(day, -(MIN_DAYS - 1))) : windowStart;
 	return {
-		perDay: averageDailySpend(app.treasury.db, from, day),
+		perDay: averageDailySpend(app.treasury.db, from, day, scope),
 		basis: 'average',
 		months: setting.months,
 		days: shortened ? daysBetween(from, day) + 1 : null
@@ -55,17 +58,18 @@ const daysBetween = (from: string, to: string) =>
 export async function projection(
 	app: Runtime,
 	days = Math.round(app.config.projection.horizon_months * 30.44),
-	extra: readonly ProjectionEvent[] = []
+	extra: readonly ProjectionEvent[] = [],
+	scope?: Scope
 ): Promise<ProjectionResult> {
 	const day = today(app).day;
 	const until = addDays(day, days);
-	const { total } = await statsReader(app).accounts();
-	const spend = dailySpend(app);
+	const { total } = await statsReader(app, scope).accounts();
+	const spend = dailySpend(app, scope);
 	const result = projectBalance({
 		today: day,
 		until,
 		startMinor: total.amount,
-		events: [...upcomingEvents(app, until), ...extra],
+		events: [...upcomingEvents(app, until, scope), ...extra],
 		dailySpendMinor: spend.perDay
 	});
 	return {

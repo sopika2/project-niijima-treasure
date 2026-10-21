@@ -3,6 +3,8 @@ export * from './schema.ts';
 export { openDatabase, getSetting, setSetting, totalChanges } from './client.ts';
 export type { Db, Treasury, OpenOptions } from './client.ts';
 export { exportDefinitions } from './definitions.ts';
+export { scopeFor, ownedBy, legInScope } from './scope.ts';
+export type { Scope } from './scope.ts';
 export { accountBalances, trackingStart } from './repositories/accounts.ts';
 export type { AccountBalance } from './repositories/accounts.ts';
 export {

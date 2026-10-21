@@ -19,6 +19,7 @@ import {
 	fieldErrors,
 	ledgerContext,
 	lookup,
+	scopeOf,
 	text,
 	today,
 	transactionRow,
@@ -28,11 +29,12 @@ import { firstDue, monthlyEffect, postDueItems, scheduleOf } from '#lib/server/r
 import { runtime, type Runtime } from '#lib/server/runtime.ts';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ locals }) => {
 	const app = await runtime();
 	const { db } = app.treasury;
+	const scope = scopeOf(locals);
 	const { accounts, categories } = lookup(app);
-	const rules = listRules(db).map((rule) => {
+	const rules = listRules(db, scope).map((rule) => {
 		const schedule = scheduleOf(rule);
 		const category = rule.categoryId ? categories.get(rule.categoryId) : undefined;
 		return {
@@ -73,7 +75,7 @@ export const load: PageServerLoad = async () => {
 			}
 		};
 	});
-	const pending = listTransactions(db, { status: 'pending' })
+	const pending = listTransactions(db, { status: 'pending', scope })
 		.sort((a, b) => a.date.localeCompare(b.date))
 		.map((transaction) => ({
 			...transactionRow(transaction, accounts, categories),

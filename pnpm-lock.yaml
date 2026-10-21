@@ -60,6 +60,9 @@ importers:
         specifier: ^13.0.3
         version: 13.0.3
     devDependencies:
+      '@niijima/design':
+        specifier: github:sopika2/Niijima-Design#ab9ae651e5a280f23565f11fb1975ff25d78304b
+        version: https://codeload.github.com/sopika2/Niijima-Design/tar.gz/ab9ae651e5a280f23565f11fb1975ff25d78304b(svelte@5.57.2(@typescript-eslint/types@8.71.2))
       '@sveltejs/adapter-node':
         specifier: ^6.0.0
         version: 6.0.0(@sveltejs/kit@3.1.0(@sveltejs/vite-plugin-svelte@7.3.1(svelte@5.57.2(@typescript-eslint/types@8.71.2))(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)(yaml@2.9.1)))(svelte@5.57.2(@typescript-eslint/types@8.71.2))(typescript@6.0.3)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)(yaml@2.9.1)))
@@ -726,6 +729,15 @@ packages:
 
   '@keyv/serialize@1.1.1':
     resolution: {integrity: sha512-dXn3FZhPv0US+7dtJsIi2R+c7qWYiReoEh5zUntWCf4oSpMNib8FDhSoed6m3QyZdx5hK7iLFkYk3rNxwt8vTA==}
+
+  '@niijima/design@https://codeload.github.com/sopika2/Niijima-Design/tar.gz/ab9ae651e5a280f23565f11fb1975ff25d78304b':
+    resolution: {tarball: https://codeload.github.com/sopika2/Niijima-Design/tar.gz/ab9ae651e5a280f23565f11fb1975ff25d78304b}
+    version: 0.1.0
+    peerDependencies:
+      svelte: ^5.0.0
+    peerDependenciesMeta:
+      svelte:
+        optional: true
 
   '@noble/ciphers@2.4.0':
     resolution: {integrity: sha512-AnjFn0Jv92laAkvMrghlFZq4qQCIN/4DxFV/eooqtC2YTjB7kBeLMS2T9KJX4Dn+ZVXLOwK0lSgqDtx9gvxtiw==}
@@ -2197,6 +2209,10 @@ snapshots:
       keyv: 5.6.0
 
   '@keyv/serialize@1.1.1': {}
+
+  '@niijima/design@https://codeload.github.com/sopika2/Niijima-Design/tar.gz/ab9ae651e5a280f23565f11fb1975ff25d78304b(svelte@5.57.2(@typescript-eslint/types@8.71.2))':
+    optionalDependencies:
+      svelte: 5.57.2(@typescript-eslint/types@8.71.2)
 
   '@noble/ciphers@2.4.0': {}
 

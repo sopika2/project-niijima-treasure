@@ -4,6 +4,7 @@ import {
 	categoryOption,
 	lookup,
 	monthRange,
+	scopeOf,
 	shiftMonth,
 	toBase,
 	today
@@ -11,18 +12,19 @@ import {
 import { runtime } from '#lib/server/runtime.ts';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ url }) => {
+export const load: PageServerLoad = async ({ url, locals }) => {
 	const app = await runtime();
 	const { db } = app.treasury;
+	const scope = scopeOf(locals);
 	const span = url.searchParams.get('months') === '12' ? 12 : 6;
 	const { day, month } = today(app);
 	// Months before tracking began would show as zero months and drag every average down.
-	const started = trackingStart(db);
+	const started = trackingStart(db, scope);
 	const spanStart = monthRange(shiftMonth(month, -(span - 1))).from;
 	const from = started && started > spanStart ? monthRange(started.slice(0, 7)).from : spanStart;
 	const to = day;
 
-	const months = monthlyTotals(db, from, to);
+	const months = monthlyTotals(db, from, to, scope);
 
 	// The combined balance at the end of each month (today for this month), in the base currency.
 	const netWorth = months.map(({ month: which }) => {
@@ -30,7 +32,8 @@ export const load: PageServerLoad = async ({ url }) => {
 		let total = 0;
 		for (const { account, balanceMinor } of accountBalances(db, {
 			asOf: end,
-			includeArchived: true
+			includeArchived: true,
+			scope
 		})) {
 			if (!account.includeInTotal) continue;
 			total += toBase(app, balanceMinor, account.currency, end) ?? 0;
@@ -44,7 +47,8 @@ export const load: PageServerLoad = async ({ url }) => {
 		let total = 0;
 		for (const { account, balanceMinor } of accountBalances(db, {
 			asOf: before,
-			includeArchived: true
+			includeArchived: true,
+			scope
 		})) {
 			if (account.includeInTotal) total += toBase(app, balanceMinor, account.currency, before) ?? 0;
 		}
@@ -52,7 +56,7 @@ export const load: PageServerLoad = async ({ url }) => {
 	})();
 
 	const { categories } = lookup(app);
-	const spending = spendingByCategory(db, from, to);
+	const spending = spendingByCategory(db, from, to, scope);
 	const spent = spending.reduce((sum, row) => sum + row.amountMinor, 0);
 	const byCategory = spending.map((row) => {
 		const category = row.categoryId ? categories.get(row.categoryId) : undefined;

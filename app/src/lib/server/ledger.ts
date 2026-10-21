@@ -12,8 +12,12 @@ import {
 	latestMiddleRate,
 	listAccounts,
 	listCategories,
+	owners,
+	scopeFor,
 	type Account,
 	type Category,
+	type Owner,
+	type Scope,
 	type StoredTransaction
 } from '@treasure/db';
 import type { AccountOption, CategoryOption, TransactionRow } from '../types.ts';
@@ -68,6 +72,17 @@ export function ledgerContext(app: Runtime, allowArchived?: ReadonlySet<string>)
 			latestMiddleRate(db, currency, base, `${date}T23:59:59.999Z`)?.rate ?? null,
 		allowArchived
 	};
+}
+
+/** What a sister sees: her own accounts, budgets and Treasures, plus the shared ones. */
+export function scopeOf(locals: App.Locals): Scope {
+	return scopeFor(locals.persona);
+}
+
+/** The owner picked on a form; anything else means the sister using it. */
+export function ownerOf(form: FormData, locals: App.Locals): Owner {
+	const value = form.get('owner');
+	return owners.find((owner) => owner === value) ?? locals.persona;
 }
 
 export function text(form: FormData, key: string): string {

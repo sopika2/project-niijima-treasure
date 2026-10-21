@@ -5,6 +5,8 @@ import {
 	categoryOption,
 	fieldErrors,
 	isMonth,
+	ownerOf,
+	scopeOf,
 	text,
 	today,
 	typedAmount
@@ -13,11 +15,14 @@ import { budgetRows } from '#lib/server/plans.ts';
 import { runtime } from '#lib/server/runtime.ts';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ locals }) => {
 	const app = await runtime();
 	const { day, month } = today(app);
-	const rows = budgetRows(app, month);
-	const taken = new Set(rows.map((row) => row.categoryId));
+	const rows = budgetRows(app, month, scopeOf(locals));
+	// A category can have one limit per owner: hers and a shared one.
+	const taken = new Set(
+		rows.filter((row) => row.owner === locals.persona).map((row) => row.categoryId)
+	);
 	const free = listCategories(app.treasury.db)
 		.filter((category) => category.kind === 'expense' && !taken.has(category.id))
 		.map(categoryOption);
@@ -39,7 +44,7 @@ export const load: PageServerLoad = async () => {
 };
 
 export const actions: Actions = {
-	set: async ({ request }) => {
+	set: async ({ request, locals }) => {
 		const app = await runtime();
 		const form = await request.formData();
 		const categoryId = text(form, 'categoryId');
@@ -55,7 +60,8 @@ export const actions: Actions = {
 				categoryId,
 				limitMinor,
 				currency: base,
-				month: isMonth(month) ? month : null
+				month: isMonth(month) ? month : null,
+				owner: ownerOf(form, locals)
 			});
 			return { saved: true };
 		} catch (error) {
@@ -65,10 +71,10 @@ export const actions: Actions = {
 		}
 	},
 
-	remove: async ({ request }) => {
+	remove: async ({ request, locals }) => {
 		const app = await runtime();
 		const form = await request.formData();
-		removeBudget(app.treasury.db, text(form, 'categoryId'));
+		removeBudget(app.treasury.db, text(form, 'categoryId'), ownerOf(form, locals));
 		return { removed: true };
 	}
 };

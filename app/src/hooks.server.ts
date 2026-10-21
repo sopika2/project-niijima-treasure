@@ -1,4 +1,5 @@
 import { building } from '$app/env';
+import { personaFromCookie } from '@niijima/design';
 import type { Handle, ServerInit } from '@sveltejs/kit/hooks';
 import { htmlAttributes } from '@treasure/style';
 import { runtime } from '#lib/server/runtime.ts';
@@ -32,6 +33,7 @@ export const init: ServerInit = async () => {
 export const handle: Handle = async ({ event, resolve }) => {
 	const app = await runtime();
 	event.locals.user = null;
+	event.locals.persona = personaFromCookie(event.request.headers.get('cookie')) ?? 'makoto';
 
 	if (!OPEN_PATHS.has(event.url.pathname) && app.access.mode === 'discord') {
 		const user = app.access.verify(event.cookies);
@@ -64,7 +66,10 @@ export const handle: Handle = async ({ event, resolve }) => {
 		}
 	}
 
-	const attributes = Object.entries(htmlAttributes(app.style.current().style))
+	const attributes = Object.entries({
+		...htmlAttributes(app.style.current().style),
+		'data-persona': event.locals.persona
+	})
 		.map(([name, value]) => `${name}="${value}"`)
 		.join(' ');
 

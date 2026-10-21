@@ -1,5 +1,5 @@
 import { daysBetween, formatMoney, money } from '@treasure/core';
-import { countPending, foreignCurrencies, getSetting, setSetting } from '@treasure/db';
+import { countPending, foreignCurrencies, getSetting, setSetting, type Scope } from '@treasure/db';
 import { today } from './ledger.ts';
 import { log, logError } from './log.ts';
 import { budgetRows, goalRows } from './plans.ts';
@@ -21,8 +21,11 @@ export function fill(template: string, values: Record<string, string | number>):
 	);
 }
 
-/** Everything that needs your attention right now, most serious first. */
-export async function verdicts(app: Runtime): Promise<Verdict[]> {
+/**
+ * Everything that needs your attention right now, most serious first. Without a scope it covers
+ * everyone (the Discord alerts); with one, only that persona's money.
+ */
+export async function verdicts(app: Runtime, scope?: Scope): Promise<Verdict[]> {
 	const words = app.style.current().style.copy.verdicts;
 	const { locale, base_currency: base } = app.config;
 	const { day, month } = today(app);
@@ -40,7 +43,7 @@ export async function verdicts(app: Runtime): Promise<Verdict[]> {
 		list.push({ key: `backup:${day}`, tone: 'danger', title: words.backup, href: '/system' });
 	}
 
-	for (const budget of budgetRows(app, month)) {
+	for (const budget of budgetRows(app, month, scope)) {
 		if (budget.state === 'over') {
 			list.push({
 				key: `budget-over:${budget.categoryId}:${month}`,
@@ -66,7 +69,7 @@ export async function verdicts(app: Runtime): Promise<Verdict[]> {
 	}
 
 	const floor = app.config.alerts.balance_floor * 100;
-	const ahead = await projection(app, 60);
+	const ahead = await projection(app, 60, [], scope);
 	const dip = ahead.points.find((point) => point.balanceMinor < floor);
 	if (dip) {
 		list.push({
@@ -77,7 +80,7 @@ export async function verdicts(app: Runtime): Promise<Verdict[]> {
 		});
 	}
 
-	const pending = countPending(app.treasury.db);
+	const pending = countPending(app.treasury.db, scope);
 	if (pending > 0) {
 		list.push({
 			key: `pending:${day}:${pending}`,
@@ -87,7 +90,7 @@ export async function verdicts(app: Runtime): Promise<Verdict[]> {
 		});
 	}
 
-	for (const goal of goalRows(app)) {
+	for (const goal of goalRows(app, { scope })) {
 		if (goal.late) {
 			list.push({
 				key: `goal-late:${goal.id}:${month}`,

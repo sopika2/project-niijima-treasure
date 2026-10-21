@@ -1,6 +1,7 @@
 import { and, asc, eq, gte, isNull, lte, sql } from 'drizzle-orm';
 import type { Db } from '../client.ts';
 import { accounts, transactionLegs, transactions, type Account } from '../schema.ts';
+import { ownedBy, type Scope } from '../scope.ts';
 
 export interface AccountBalance {
 	readonly account: Account;
@@ -17,10 +18,11 @@ export interface AccountBalance {
  * included. Averages and charts start here, so months before you began don't count as zero.
  * Null when there are no accounts yet.
  */
-export function trackingStart(db: Db): string | null {
+export function trackingStart(db: Db, scope?: Scope | null): string | null {
 	const row = db
 		.select({ day: sql<string | null>`min(${accounts.openingDate})` })
 		.from(accounts)
+		.where(ownedBy(accounts.owner, scope))
 		.get();
 	return row?.day ?? null;
 }
@@ -32,7 +34,7 @@ export function trackingStart(db: Db): string | null {
  */
 export function accountBalances(
 	db: Db,
-	options: { asOf?: string; includeArchived?: boolean } = {}
+	options: { asOf?: string; includeArchived?: boolean; scope?: Scope | null } = {}
 ): AccountBalance[] {
 	const posted = db
 		.select({
@@ -57,7 +59,12 @@ export function accountBalances(
 		.select({ account: accounts, moved: sql<number>`coalesce(${posted.total}, 0)` })
 		.from(accounts)
 		.leftJoin(posted, eq(posted.accountId, accounts.id))
-		.where(options.includeArchived ? undefined : eq(accounts.archived, false))
+		.where(
+			and(
+				options.includeArchived ? undefined : eq(accounts.archived, false),
+				ownedBy(accounts.owner, options.scope)
+			)
+		)
 		.orderBy(asc(accounts.archived), asc(accounts.sortOrder), asc(accounts.name))
 		.all()
 		.map(({ account, moved }) => ({

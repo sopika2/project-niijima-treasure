@@ -11,13 +11,16 @@ import {
 	contributionTotals,
 	listCategories,
 	listGoals,
-	spendingByCategory
+	spendingByCategory,
+	type Owner,
+	type Scope
 } from '@treasure/db';
 import { categoryOption, monthRange, toBase, today } from './ledger.ts';
 import type { Runtime } from './runtime.ts';
 
 export interface BudgetRow extends BudgetStatus {
 	readonly categoryId: string;
+	readonly owner: Owner;
 	readonly name: string;
 	readonly color: number;
 	readonly limitMinor: number;
@@ -28,23 +31,24 @@ export interface BudgetRow extends BudgetStatus {
 }
 
 /** Every category that has a limit, with this month's spending against it, biggest share first. */
-export function budgetRows(app: Runtime, month = today(app).month): BudgetRow[] {
+export function budgetRows(app: Runtime, month = today(app).month, scope?: Scope): BudgetRow[] {
 	const { db } = app.treasury;
 	const day = today(app).day;
 	const { from, to } = monthRange(month);
 	const spent = new Map(
-		spendingByCategory(db, from, to).map((row) => [row.categoryId, row.amountMinor])
+		spendingByCategory(db, from, to, scope).map((row) => [row.categoryId, row.amountMinor])
 	);
 	const categories = new Map(
 		listCategories(db, { includeArchived: true }).map((row) => [row.id, row])
 	);
 	const warnAt = app.config.alerts.budget_warn_percent / 100;
-	return budgetsForMonth(db, month)
+	return budgetsForMonth(db, month, scope)
 		.map((budget) => {
 			const category = categories.get(budget.categoryId);
 			const spentMinor = spent.get(budget.categoryId) ?? 0;
 			return {
 				categoryId: budget.categoryId,
+				owner: budget.owner,
 				name: category?.name ?? '?',
 				color: category ? categoryOption(category).color : 8,
 				limitMinor: budget.limitMinor,
@@ -59,6 +63,7 @@ export function budgetRows(app: Runtime, month = today(app).month): BudgetRow[] 
 
 export interface GoalRow extends GoalStatus {
 	readonly id: string;
+	readonly owner: Owner;
 	readonly name: string;
 	readonly targetMinor: number;
 	readonly savedMinor: number;
@@ -80,7 +85,10 @@ const daysBetween = (from: string, to: string) =>
  * Every Treasure with its progress. A Treasure tied to an account counts that account's balance
  * (and its growth over the last 90 days as the pace); otherwise it counts what was put in by hand.
  */
-export function goalRows(app: Runtime, options: { includeArchived?: boolean } = {}): GoalRow[] {
+export function goalRows(
+	app: Runtime,
+	options: { includeArchived?: boolean; scope?: Scope } = {}
+): GoalRow[] {
 	const { db } = app.treasury;
 	const day = today(app).day;
 	const since = addDays(day, -LOOKBACK_DAYS);
@@ -121,6 +129,7 @@ export function goalRows(app: Runtime, options: { includeArchived?: boolean } = 
 		const recentPerMonthMinor = Math.max(0, Math.round((recent / days) * 30.44));
 		return {
 			id: goal.id,
+			owner: goal.owner,
 			name: goal.name,
 			targetMinor: goal.targetMinor,
 			savedMinor: saved,

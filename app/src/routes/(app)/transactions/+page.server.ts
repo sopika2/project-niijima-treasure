@@ -7,6 +7,7 @@ import {
 	ledgerContext,
 	lookup,
 	monthRange,
+	scopeOf,
 	shiftMonth,
 	text,
 	today,
@@ -15,9 +16,10 @@ import {
 import { runtime } from '#lib/server/runtime.ts';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ url }) => {
+export const load: PageServerLoad = async ({ url, locals }) => {
 	const app = await runtime();
 	const { db } = app.treasury;
+	const scope = scopeOf(locals);
 	const current = today(app).month;
 	const month = isMonth(url.searchParams.get('month')) ? url.searchParams.get('month')! : current;
 	const { from, to } = monthRange(month);
@@ -38,7 +40,8 @@ export const load: PageServerLoad = async ({ url }) => {
 		accountId: filters.account || undefined,
 		categoryId: filters.category || undefined,
 		kind,
-		search: filters.q || undefined
+		search: filters.q || undefined,
+		scope
 	}).map((row) => transactionRow(row, accounts, categories));
 
 	return {
@@ -48,7 +51,7 @@ export const load: PageServerLoad = async ({ url }) => {
 		next: month < current ? shiftMonth(month, 1) : null,
 		filters,
 		filtered: Object.values(filters).some(Boolean),
-		totals: periodTotals(db, from, to),
+		totals: periodTotals(db, from, to, scope),
 		rows
 	};
 };

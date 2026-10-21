@@ -8,15 +8,16 @@ import {
 	setGoalArchived,
 	updateGoal
 } from '@treasure/db';
-import { fieldErrors, text, today, typedAmount } from '#lib/server/ledger.ts';
+import { fieldErrors, ownerOf, scopeOf, text, today, typedAmount } from '#lib/server/ledger.ts';
 import { goalRows } from '#lib/server/plans.ts';
 import { runtime } from '#lib/server/runtime.ts';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ locals }) => {
 	const app = await runtime();
+	const scope = scopeOf(locals);
 	return {
-		goals: goalRows(app, { includeArchived: true }).map((goal) => ({
+		goals: goalRows(app, { includeArchived: true, scope }).map((goal) => ({
 			...goal,
 			form: {
 				name: goal.name,
@@ -29,14 +30,14 @@ export const load: PageServerLoad = async () => {
 		currencies: [
 			...new Set([
 				app.config.base_currency,
-				...listAccounts(app.treasury.db).map((a) => a.currency)
+				...listAccounts(app.treasury.db, { scope }).map((a) => a.currency)
 			])
 		]
 	};
 };
 
 export const actions: Actions = {
-	save: async ({ request }) => {
+	save: async ({ request, locals }) => {
 		const app = await runtime();
 		const { db } = app.treasury;
 		const form = await request.formData();
@@ -61,7 +62,14 @@ export const actions: Actions = {
 			errors.deadline = 'invalid_date';
 		if (Object.keys(errors).length > 0) return fail(400, { errors });
 
-		const input = { name, targetMinor, currency, deadline, accountId };
+		const input = {
+			name,
+			targetMinor,
+			currency,
+			deadline,
+			accountId,
+			owner: ownerOf(form, locals)
+		};
 		if (id) {
 			if (!updateGoal(db, id, input)) return fail(404, { errors: { form: 'not_found' } });
 		} else {
