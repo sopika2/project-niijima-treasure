@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
+	import { ordinal } from '#lib/format.ts';
 	import {
 		Badge,
 		Button,
@@ -42,17 +43,29 @@
 		amountVaries: false
 	});
 
-	const unit = (freq: string) =>
-		({
-			daily: words.unit_daily,
-			weekly: words.unit_weekly,
-			monthly: words.unit_monthly,
-			yearly: words.unit_yearly
-		})[freq] ?? freq;
+	const unit = (freq: string, many: boolean) =>
+		(many
+			? {
+					daily: words.units_daily,
+					weekly: words.units_weekly,
+					monthly: words.units_monthly,
+					yearly: words.units_yearly
+				}
+			: {
+					daily: words.unit_daily,
+					weekly: words.unit_weekly,
+					monthly: words.unit_monthly,
+					yearly: words.unit_yearly
+				})[freq] ?? freq;
+	// "Every month · on the 1st", "Every 2 weeks"
 	const every = (rule: Rule) =>
-		`${words.every} ${rule.interval > 1 ? `${rule.interval} ` : ''}${unit(rule.freq)}${
+		`${words.every} ${rule.interval > 1 ? `${rule.interval} ` : ''}${unit(rule.freq, rule.interval > 1)}${
 			rule.freq === 'monthly' && rule.dayOfMonth
-				? ` · ${rule.dayOfMonth === -1 ? words.last_day : `${rule.dayOfMonth}.`}`
+				? ` · ${
+						rule.dayOfMonth === -1
+							? words.last_day
+							: words.on_day.replace('{day}', ordinal(rule.dayOfMonth, ui.locale))
+					}`
 				: ''
 		}`;
 	const signed = (rule: Rule) =>

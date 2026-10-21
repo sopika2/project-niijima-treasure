@@ -24,18 +24,18 @@ describe('compileStyle', () => {
 
 	it('emits CSS variables for both schemes', () => {
 		const { css } = compile(defaults);
-		expect(css).toContain('--tr-color-accent: #e8132b;');
+		expect(css).toContain('--tr-color-accent: #d90416;');
 		expect(css).toContain(":root[data-scheme='light']");
-		expect(css).toContain('--tr-color-accent: #d10f25;');
+		expect(css).toContain('--tr-color-accent: #d90416;');
 		expect(css).toContain('--tr-skew: -10deg;');
-		expect(css).toContain('--tr-chart-1: #e66767;');
+		expect(css).toContain('--tr-chart-1: #ff5a6a;');
 		expect(css).toContain('prefers-reduced-motion');
 	});
 
 	it('fills anything left out from the defaults and lists it', () => {
 		const result = compile('colors:\n  dark:\n    accent: "#00ff88"\n');
 		expect(result.style.colors.dark.accent).toBe('#00ff88');
-		expect(result.style.colors.dark.secondary).toBe('#3f7ce8');
+		expect(result.style.colors.dark.secondary).toBe('#3fd8ff');
 		expect(result.defaultsUsed).toContain('colors.dark.secondary');
 		expect(result.defaultsUsed).not.toContain('colors.dark.accent');
 	});
@@ -101,9 +101,9 @@ describe('compileStyle', () => {
 
 	it('numbers the ransom fonts', () => {
 		const { css } = compile(defaults);
-		expect(css).toContain('--tr-font-ransom-1: Fraunces, Georgia, serif;');
-		expect(css).toContain('--tr-font-ransom-1-weight: 900;');
-		expect(css).toContain('--tr-font-ransom-3-scale: 1.06;');
+		expect(css).toContain('--tr-font-ransom-1: "Abril Fatface", Didot, Georgia, serif;');
+		expect(css).toContain('--tr-font-ransom-1-weight: 400;');
+		expect(css).toContain('--tr-font-ransom-3-scale: 0.82;');
 		expect(css).toContain('--tr-font-ransom-count: 6;');
 	});
 });

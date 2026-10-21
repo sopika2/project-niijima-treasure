@@ -160,5 +160,16 @@ export function formatMoney(a: Money, options: FormatOptions): string {
 		signDisplay: options.signed ? 'exceptZero' : 'auto'
 	});
 	// Format the exact decimal string, not a float, so large amounts never round wrongly.
-	return formatter.format(toDecimalString(a) as `${number}`);
+	const value = toDecimalString(a) as `${number}`;
+	if (!info.symbolAfter || options.symbol === false) return formatter.format(value);
+	// Forints and the like: "-12,480 Ft", not "-Ft 12,480", whatever the language puts first.
+	const parts = formatter.formatToParts(value);
+	const at = parts.findIndex((part) => part.type === 'currency');
+	const firstDigit = parts.findIndex((part) => part.type === 'integer');
+	if (at < 0 || at > firstDigit) return formatter.format(value);
+	const symbol = parts[at]!.value;
+	const rest = parts.filter(
+		(_, index) => index !== at && !(index === at + 1 && parts[index]!.type === 'literal')
+	);
+	return `${rest.map((part) => part.value).join('')}\u00a0${symbol}`;
 }

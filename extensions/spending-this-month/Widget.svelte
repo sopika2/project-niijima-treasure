@@ -43,7 +43,11 @@
 		</ol>
 	{/if}
 	{#if data.missingRates > 0}
-		<p class="note">{ui.copy.status.missing_rates} {data.missingRates}</p>
+		<p class="note">
+			{data.missingRates === 1
+				? ui.copy.status.missing_entries_one
+				: ui.copy.status.missing_entries.replace('{count}', String(data.missingRates))}
+		</p>
 	{/if}
 </Card>
 

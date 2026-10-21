@@ -5,7 +5,13 @@ import {
 	parseOtpRates,
 	type RateQuote
 } from '@treasure/core';
-import { backfillBaseAmounts, foreignCurrencies, insertRates, type Treasury } from '@treasure/db';
+import {
+	backfillBaseAmounts,
+	currenciesWithoutRates,
+	foreignCurrencies,
+	insertRates,
+	type Treasury
+} from '@treasure/db';
 import { log, logError } from './log.ts';
 import { localDay } from './snapshots.ts';
 
@@ -109,6 +115,17 @@ export class RateService {
 		this.#status = { ...this.#status, lastAttempt: now, problem: problems.join(' ') };
 		logError('rates', problems.join(' '));
 		return 0;
+	}
+
+	/**
+	 * Fetches straight away when a currency in use has no rate at all (a new foreign account),
+	 * instead of leaving it out of the total until the next scheduled fetch. Waits at most
+	 * `waitMs` so a save isn't held up by a slow bank; the fetch carries on either way.
+	 */
+	async fetchMissing(waitMs = 5_000): Promise<void> {
+		const { treasury, base, enabled } = this.#settings;
+		if (!enabled || currenciesWithoutRates(treasury.db, base).length === 0) return;
+		await Promise.race([this.refresh(), new Promise((resolve) => setTimeout(resolve, waitMs))]);
 	}
 
 	/** Uses a rate you typed in, until the next fetched one is newer. */

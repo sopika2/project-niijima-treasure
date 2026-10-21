@@ -81,6 +81,7 @@ export const actions: Actions = {
 			} else {
 				createAccount(app.treasury.db, clean);
 			}
+			await app.rates.fetchMissing();
 			return { saved: 'account' };
 		} catch (error) {
 			if (error instanceof AccountLockedError) {

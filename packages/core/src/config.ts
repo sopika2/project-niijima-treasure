@@ -35,8 +35,8 @@ const extensionEntry = z.union([
 export const configSchema = z.strictObject({
 	/** Currency every total and report is shown in. */
 	base_currency: currencyCode.default('HUF'),
-	/** Number and date formatting, e.g. hu-HU or en-GB. */
-	locale: z.string().min(2).default('hu-HU'),
+	/** Number and date formatting, e.g. en-GB (English) or hu-HU (Hungarian). */
+	locale: z.string().min(2).default('en-GB'),
 	timezone: timezone.default('Europe/Budapest'),
 	/** Where the Google Drive folder is mounted inside the container. */
 	drive_path: z.string().min(1).default('/app/drive'),

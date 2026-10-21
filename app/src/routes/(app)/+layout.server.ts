@@ -8,18 +8,9 @@ import type { LayoutServerLoad } from './$types';
 export const load: LayoutServerLoad = async () => {
 	const app = await runtime();
 	const { db } = app.treasury;
-	const { total, accounts: balances } = await statsReader(app).accounts();
+	const { total } = await statsReader(app).accounts();
 	return {
 		wallet: total,
-		// The command menu's "party": accounts in the total, biggest first, with their share.
-		party: balances
-			.filter((account) => account.includeInTotal && account.baseBalance)
-			.sort((a, b) => (b.baseBalance?.amount ?? 0) - (a.baseBalance?.amount ?? 0))
-			.slice(0, 4)
-			.map((account) => ({
-				name: account.name,
-				share: total.amount > 0 ? Math.max(0, (account.baseBalance?.amount ?? 0) / total.amount) : 0
-			})),
 		problems: app.problems(),
 		accounts: listAccounts(db).map(accountOption),
 		categories: listCategories(db).map(categoryOption),

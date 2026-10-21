@@ -1,7 +1,13 @@
 import type { PlannedTransaction } from '@treasure/core';
-import { and, between, desc, eq, inArray, isNull, like, sql, type SQL } from 'drizzle-orm';
+import { and, between, desc, eq, inArray, isNull, like, not, or, sql, type SQL } from 'drizzle-orm';
 import type { Db } from '../client.ts';
-import { transactionLegs, transactions, type Transaction, type TransactionLeg } from '../schema.ts';
+import {
+	recurringRules,
+	transactionLegs,
+	transactions,
+	type Transaction,
+	type TransactionLeg
+} from '../schema.ts';
 
 export interface StoredTransaction extends Transaction {
 	readonly legs: readonly TransactionLeg[];
@@ -238,6 +244,22 @@ export function postPending(db: Db, id: string): boolean {
  * not come from a recurring item (those are already in the projection on their own).
  */
 export function averageDailySpend(db: Db, from: string, to: string): number {
+	// Bills that are now recurring items but were logged by hand before are already in the
+	// forecast as recurring events; counting them here as well would add them twice.
+	const rules = db
+		.select()
+		.from(recurringRules)
+		.where(and(eq(recurringRules.kind, 'expense'), eq(recurringRules.paused, false)))
+		.all();
+	const asRecurring = rules.map((rule) =>
+		or(
+			and(
+				eq(transactionLegs.accountId, rule.accountId),
+				eq(transactionLegs.amountMinor, -rule.amountMinor)
+			),
+			sql`lower(trim(coalesce(${transactions.note}, ''))) = ${rule.name.trim().toLowerCase()}`
+		)
+	);
 	const row = db
 		.select({ total: sql<number>`coalesce(sum(-${transactionLegs.baseAmountMinor}), 0)` })
 		.from(transactionLegs)
@@ -247,7 +269,8 @@ export function averageDailySpend(db: Db, from: string, to: string): number {
 				live(),
 				eq(transactions.kind, 'expense'),
 				isNull(transactions.recurringId),
-				between(transactions.date, from, to)
+				between(transactions.date, from, to),
+				asRecurring.length > 0 ? not(or(...asRecurring)!) : undefined
 			)
 		)
 		.get();

@@ -55,6 +55,16 @@ describe('formatMoney', () => {
 		expect(plain(formatMoney(money(123456789, 'EUR'), { locale: 'hu-HU' }))).toBe('1 234 567,89 €');
 	});
 
+	it('writes forints after the amount in English too', () => {
+		expect(plain(formatMoney(money(1248000, 'HUF'), { locale: 'en-GB' }))).toBe('12,480 Ft');
+		expect(plain(formatMoney(money(-1248000, 'HUF'), { locale: 'en-GB' }))).toBe('-12,480 Ft');
+		expect(plain(formatMoney(money(1248000, 'HUF'), { locale: 'en-GB', signed: true }))).toBe(
+			'+12,480 Ft'
+		);
+		expect(plain(formatMoney(money(-2999, 'EUR'), { locale: 'en-GB' }))).toBe('-€29.99');
+		expect(plain(formatMoney(money(1248000, 'HUF'), { locale: 'hu-HU' }))).toBe('12 480 Ft');
+	});
+
 	it('can force a sign for income', () => {
 		const text = formatMoney(money(450000, 'EUR'), { locale: 'en-GB', signed: true });
 		expect(plain(text)).toBe('+€4,500.00');

@@ -13,9 +13,20 @@
 
 	let { text, level = 1, size = 'lg' }: Props = $props();
 
-	/** Same text, same letters every time: fonts, tilts and sizes come from ransom(). */
-	const variants = ['paper', 'ink', 'paper', 'accent', 'ink'] as const;
-	const variantOf = (index: number, pick: number) => (index === 0 ? 'accent' : variants[pick]);
+	/**
+	 * Same text, same letters every time: fonts, tilts and sizes come from ransom(). Tiles go
+	 * paper, ink, red like the landing page's, never the same twice in a row.
+	 */
+	const variants = ['paper', 'ink', 'accent'] as const;
+	function tiles(word: string, salt: number) {
+		let last = -1;
+		return ransom(word, salt).map((letter, i) => {
+			let pick = salt === 0 && i === 0 ? 2 : letter.pick % variants.length;
+			if (pick === last) pick = (pick + 1) % variants.length;
+			last = pick;
+			return { ...letter, variant: variants[pick] };
+		});
+	}
 
 	const words = $derived(text.split(/\s+/).filter(Boolean));
 </script>
@@ -25,12 +36,9 @@
 	<span class="ransom" aria-hidden="true">
 		{#each words as word, w (w)}
 			<span class="word">
-				{#each ransom(word, w) as letter, i (i)}
-					<span
-						class="chip"
-						class:lower={letter.lower}
-						data-variant={variantOf(w + i, letter.pick)}
-						style={letter.style}>{letter.char}</span
+				{#each tiles(word, w) as letter, i (i)}
+					<span class="chip" data-variant={letter.variant} style={letter.style}
+						><span class="face">{letter.char}</span></span
 					>
 				{/each}
 			</span>
@@ -62,7 +70,7 @@
 	:global([data-title='ransom']) .ransom {
 		display: inline-flex;
 		flex-wrap: wrap;
-		gap: 0.08em 0.32em;
+		gap: 0.08em 0.5em;
 		font-style: normal;
 	}
 	.word {
@@ -70,9 +78,10 @@
 		align-items: center;
 		gap: 0.04em;
 	}
+	/* A tile: the letter on a torn scrap with a hard ink shadow (the landing page's .nj-ransom). */
 	.chip {
 		display: inline-block;
-		padding: 0.06em 0.12em 0.02em;
+		filter: drop-shadow(0.055em 0.055em 0 var(--tr-color-ink));
 		font-family: var(--font, inherit);
 		font-size: calc(1em * var(--scale));
 		font-style: normal;
@@ -83,20 +92,21 @@
 		animation: drop var(--tr-duration-slow) var(--tr-ease-emphasized) both;
 		animation-delay: calc(var(--i) * 18ms);
 	}
-	.chip.lower {
-		text-transform: lowercase;
+	.face {
+		display: block;
+		padding: 0.1em 0.13em 0.05em;
+		line-height: 0.9;
+		clip-path: var(--tear);
 	}
-	.chip[data-variant='paper'] {
+	[data-variant='paper'] .face {
 		background: var(--tr-color-paper);
 		color: var(--tr-color-ink);
 	}
-	.chip[data-variant='ink'] {
+	[data-variant='ink'] .face {
 		background: var(--tr-color-ink);
 		color: var(--tr-color-paper);
-		outline: 2px solid var(--tr-color-paper);
-		outline-offset: -2px;
 	}
-	.chip[data-variant='accent'] {
+	[data-variant='accent'] .face {
 		background: var(--tr-color-accent);
 		color: var(--tr-color-accent-text);
 	}

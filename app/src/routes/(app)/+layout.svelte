@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { goto, onNavigate } from '$app/navigation';
 	import { formatMoney, money } from '@treasure/core';
-	import { page } from '$app/state';
-	import { Notice, Shell, Sheet, Toast, useUi } from '@treasure/ui';
+	import { navigating, page } from '$app/state';
+	import { Loader, Notice, Shell, Sheet, Toast, useUi } from '@treasure/ui';
 	import TransactionForm from '#lib/components/TransactionForm.svelte';
 	import { notify, toast } from '#lib/toast.svelte.ts';
 	import type { LayoutProps } from './$types';
@@ -12,6 +12,17 @@
 	const copy = $derived(ui.copy);
 
 	let adding = $state(false);
+
+	/* "Take your time" only when a page is slow to arrive, never as a flash on a quick one. */
+	let slow = $state(false);
+	$effect(() => {
+		if (!navigating.to) {
+			slow = false;
+			return;
+		}
+		const timer = setTimeout(() => (slow = true), 350);
+		return () => clearTimeout(timer);
+	});
 
 	const wallet = $derived({
 		label: copy.terms.total,
@@ -124,7 +135,6 @@
 		flavor: [copy.nav.menu_flavor_1, copy.nav.menu_flavor_2]
 	}}
 	{wallet}
-	party={data.party}
 	art={page.data.menuArt}
 	action={{ label: copy.actions.quick_add, onclick: openAdd }}
 	banner={data.problems.length > 0 ? problems : undefined}
@@ -153,3 +163,5 @@
 </Sheet>
 
 <Toast message={toast.message} key={toast.key} />
+
+{#if slow}<Loader text={copy.loader.text} />{/if}

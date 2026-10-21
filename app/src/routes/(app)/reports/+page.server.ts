@@ -1,4 +1,4 @@
-import { accountBalances, monthlyTotals, spendingByCategory } from '@treasure/db';
+import { accountBalances, monthlyTotals, spendingByCategory, trackingStart } from '@treasure/db';
 import { addDays } from '@treasure/core';
 import {
 	categoryOption,
@@ -16,8 +16,10 @@ export const load: PageServerLoad = async ({ url }) => {
 	const { db } = app.treasury;
 	const span = url.searchParams.get('months') === '12' ? 12 : 6;
 	const { day, month } = today(app);
-	const first = shiftMonth(month, -(span - 1));
-	const from = monthRange(first).from;
+	// Months before tracking began would show as zero months and drag every average down.
+	const started = trackingStart(db);
+	const spanStart = monthRange(shiftMonth(month, -(span - 1))).from;
+	const from = started && started > spanStart ? monthRange(started.slice(0, 7)).from : spanStart;
 	const to = day;
 
 	const months = monthlyTotals(db, from, to);
@@ -35,9 +37,10 @@ export const load: PageServerLoad = async ({ url }) => {
 		}
 		return { date: end, value: total };
 	});
-	// Start the line at the day before the first month so it has a visible beginning.
+	// Start the line at the day before the first month so it has a visible beginning, or on
+	// the day tracking began when that was later.
 	const startBalance = (() => {
-		const before = addDays(from, -1);
+		const before = started && started > addDays(from, -1) ? started : addDays(from, -1);
 		let total = 0;
 		for (const { account, balanceMinor } of accountBalances(db, {
 			asOf: before,
@@ -64,6 +67,10 @@ export const load: PageServerLoad = async ({ url }) => {
 	});
 
 	const income = months.reduce((sum, row) => sum + row.incomeMinor, 0);
+	// An average month leaves out the month still running, unless it's the only one there is.
+	const complete = months.length > 1 ? months.filter((row) => row.month !== month) : months;
+	const average = (pick: (row: (typeof months)[number]) => number) =>
+		Math.round(complete.reduce((sum, row) => sum + pick(row), 0) / Math.max(1, complete.length));
 	return {
 		span,
 		from,
@@ -74,8 +81,8 @@ export const load: PageServerLoad = async ({ url }) => {
 		totals: {
 			income,
 			spent,
-			averageIncome: Math.round(income / months.length),
-			averageSpent: Math.round(spent / months.length),
+			averageIncome: average((row) => row.incomeMinor),
+			averageSpent: average((row) => row.expenseMinor),
 			missingRates: months.reduce((sum, row) => sum + row.missingRates, 0)
 		}
 	};

@@ -82,7 +82,7 @@ export async function verdicts(app: Runtime): Promise<Verdict[]> {
 		list.push({
 			key: `pending:${day}:${pending}`,
 			tone: 'info',
-			title: fill(words.pending, { count: pending }),
+			title: pending === 1 ? words.pending_one : fill(words.pending, { count: pending }),
 			href: '/recurring'
 		});
 	}

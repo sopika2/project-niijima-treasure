@@ -22,6 +22,10 @@
 	]);
 	const percent = (share: number) =>
 		new Intl.NumberFormat(ui.locale, { style: 'percent', maximumFractionDigits: 0 }).format(share);
+	const date = (day: string) =>
+		new Intl.DateTimeFormat(ui.locale, { dateStyle: 'medium', timeZone: 'UTC' }).format(
+			new Date(`${day}T00:00:00Z`)
+		);
 	const empty = $derived(data.totals.income === 0 && data.totals.spent === 0);
 	const exportHref = (format: 'csv' | 'json') =>
 		`/reports/export?from=${data.from}&to=${data.to}&format=${format}`;
@@ -95,7 +99,7 @@
 	</Card>
 
 	<Card title={words.export}>
-		<p class="muted">{data.from} – {data.to}</p>
+		<p class="muted">{date(data.from)} – {date(data.to)}</p>
 		<div class="exports">
 			<a class="export" href={exportHref('csv')} download
 				><Icon name="download" />{words.export_csv}</a
@@ -105,7 +109,11 @@
 			>
 		</div>
 		{#if data.totals.missingRates > 0}
-			<p class="muted small">{ui.copy.status.missing_rates} {data.totals.missingRates}</p>
+			<p class="muted small">
+				{data.totals.missingRates === 1
+					? ui.copy.status.missing_entries_one
+					: ui.copy.status.missing_entries.replace('{count}', String(data.totals.missingRates))}
+			</p>
 		{/if}
 	</Card>
 </div>

@@ -37,9 +37,12 @@ What it does:
 - **Reports**: income and spending per month, total over time, where the money went, and CSV or
   JSON exports. A CSV of each month is also written to Drive every night.
 - `style.yml`: one file for every color, font, size, motion, layout choice and word.
-- **Command menu** (Menu button or Esc): a full-screen Persona 5 style menu. Put character art
-  in the Drive folder under `art/` and name it in `style.yml` (`assets → menu_art`), one image
-  for every command or one per command; until then a built-in stand-in picture shows.
+- **Command menu** (Menu button or Esc): the Network screen from niijimasisters.com: calendar,
+  the highlighted command in cut-out letters on its blade, a speech box and the total. Put
+  character art in the Drive folder under `art/` and name it in `style.yml` (`assets → menu_art`),
+  one image for every command or one per command; until then the command's number stands in.
+- **The landing page's look** throughout: its colours, cut-out fonts, buttons, plates and stamps,
+  the "Take your time" loader when a page is slow, and the 404 Palace for missing pages.
 - Encrypted snapshots to Drive, restore-on-start, and overwrite protection.
 - `/api/summary` for the homepage and `/healthz` for the container health check.
 

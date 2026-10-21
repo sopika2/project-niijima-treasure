@@ -6,10 +6,9 @@
 	 */
 	import type { Snippet } from 'svelte';
 	import CommandScreen from './CommandScreen.svelte';
-	import Cutout from './Cutout.svelte';
 	import Icon from './Icon.svelte';
 	import Title from './Title.svelte';
-	import type { CommandWords, MenuArt, NavItem, PartyMember } from './types.ts';
+	import type { CommandWords, MenuArt, NavItem } from './types.ts';
 
 	interface Props {
 		appName: string;
@@ -24,8 +23,6 @@
 		banner?: Snippet;
 		/** The money counter on the command menu. */
 		wallet?: { label: string; text: string } | null;
-		/** Accounts shown like the party on the command menu. */
-		party?: readonly PartyMember[];
 		art?: MenuArt | null;
 		children: Snippet;
 	}
@@ -39,7 +36,6 @@
 		action,
 		banner,
 		wallet = null,
-		party = [],
 		art = null,
 		children
 	}: Props = $props();
@@ -62,14 +58,27 @@
 		open = true;
 	}
 	const current = $derived(nav.find((item) => item.active));
+
+	/* The floating Add button steps aside while you scroll down a list, so it never sits on
+	   the amount you're reading, and comes back as soon as you scroll up. */
+	let tucked = $state(false);
+	let lastY = 0;
+	function scrolled() {
+		const y = window.scrollY;
+		if (Math.abs(y - lastY) < 8) return;
+		tucked = y > lastY && y > 80;
+		lastY = y;
+	}
 </script>
 
-<svelte:window onkeydown={key} />
+<svelte:window onkeydown={key} onscroll={scrolled} />
 
 <div class="shell">
 	<header class="top" inert={open}>
 		<a class="brand" href="/" aria-label={appName}>
-			{#if logo}<img src={logo} alt={appName} />{:else}<Cutout text={appName} salt={2} />{/if}
+			{#if logo}<img src={logo} alt={appName} />{:else}<span class="wordmark" aria-hidden="true"
+					>{appName}<small>新島姉妹</small></span
+				>{/if}
 		</a>
 		{#if current}<span class="where" aria-hidden="true">{current.label}</span>{/if}
 		<div class="top-actions">
@@ -121,6 +130,7 @@
 		<button
 			type="button"
 			class="action action-float"
+			class:tucked
 			onclick={action.onclick}
 			aria-label={action.label}
 			inert={open}
@@ -136,7 +146,7 @@
 </div>
 
 {#if open}
-	<CommandScreen items={nav} {words} {wallet} {party} {art} onclose={close} />
+	<CommandScreen items={nav} {words} {wallet} {art} onclose={close} />
 {/if}
 
 <style>
@@ -169,6 +179,8 @@
 		background: var(--tr-color-ink);
 		color: var(--tr-color-paper);
 		border-bottom: var(--tr-accent-border-width) solid var(--tr-color-accent);
+		/* Never wider than the screen, whatever the brand and labels add up to. */
+		overflow-x: clip;
 	}
 	.brand {
 		flex: none;
@@ -179,6 +191,30 @@
 	.brand img {
 		display: block;
 		max-height: 2.5rem;
+	}
+	/* The landing page's wordmark: a tilted ink plate with a paper shadow. */
+	.wordmark {
+		display: inline-flex;
+		align-items: baseline;
+		gap: 0.5rem;
+		padding: 0.35rem 0.75rem 0.25rem;
+		background: var(--tr-color-ink);
+		color: var(--tr-color-paper);
+		box-shadow: 4px 4px 0 var(--tr-color-paper);
+		font-family: var(--tr-font-heading);
+		font-size: 1.1rem;
+		letter-spacing: 0.14em;
+		line-height: 1;
+		text-transform: uppercase;
+		white-space: nowrap;
+		transform: rotate(-3deg);
+	}
+	.wordmark small {
+		color: var(--tr-color-text-muted);
+		font-family: var(--tr-font-body);
+		font-size: 0.6rem;
+		font-weight: var(--tr-weight-bold);
+		letter-spacing: 0.2em;
 	}
 	.where {
 		overflow: hidden;
@@ -194,29 +230,55 @@
 		gap: var(--tr-space-md);
 		margin-inline-start: auto;
 	}
+	/* The landing page's BACK [Esc] plate: paper on a red block, tilted the other way. */
 	.menu-button {
+		position: relative;
+		isolation: isolate;
 		min-height: 2.6rem;
 		padding: 0 var(--tr-space-md);
 		border: 0;
-		background: var(--tr-color-paper);
+		background: none;
 		color: var(--tr-color-ink);
 		font: inherit;
 		font-family: var(--tr-font-heading);
 		font-size: var(--tr-text-lg);
-		text-transform: var(--tr-heading-case);
+		text-transform: uppercase;
 		cursor: pointer;
-		transform: skewX(var(--tr-skew));
-		box-shadow: 4px 4px 0 var(--tr-color-accent);
-		transition: transform var(--tr-duration-fast) var(--tr-ease-emphasized);
+		transform: rotate(3deg);
+		transition:
+			transform var(--tr-duration-fast) var(--tr-ease-emphasized),
+			color var(--tr-duration-fast);
+	}
+	.menu-button::before,
+	.menu-button::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		clip-path: polygon(6% 0, 100% 8%, 96% 100%, 0 88%);
+	}
+	.menu-button::before {
+		z-index: -1;
+		background: var(--tr-color-paper);
+	}
+	.menu-button::after {
+		z-index: -2;
+		background: var(--tr-color-accent);
+		transform: translate(-6px, 5px);
 	}
 	.menu-button:hover {
-		transform: skewX(var(--tr-skew)) scale(1.06) rotate(-2deg);
+		color: var(--tr-color-paper);
+		transform: rotate(3deg) scale(1.06);
+	}
+	.menu-button:hover::before {
+		background: var(--tr-color-accent);
+	}
+	.menu-button:hover::after {
+		background: var(--tr-color-paper);
 	}
 	.menu-inner {
 		display: inline-flex;
 		align-items: center;
 		gap: var(--tr-space-xs);
-		transform: skewX(calc(var(--tr-skew) * -1));
 	}
 	.menu-inner kbd {
 		margin-inline-start: var(--tr-space-xs);
@@ -275,6 +337,10 @@
 		place-items: center;
 		width: 3.75rem;
 		height: 3.75rem;
+		transition: translate var(--tr-duration-normal) var(--tr-ease-standard);
+	}
+	.action-float.tucked {
+		translate: calc(100% + var(--tr-space-md) + 12px) 0;
 	}
 
 	/* ── navigation: sidebar ──────────────────────────────────────────────── */
@@ -332,6 +398,19 @@
 	}
 	.menu a[aria-current='page']::before {
 		transform: skewX(var(--tr-skew)) scaleX(1);
+	}
+
+	/* Phones: the page's own title says where you are, and the kanji would push Menu off. */
+	@media (max-width: 599.98px) {
+		.where,
+		.wordmark small,
+		.menu-inner kbd {
+			display: none;
+		}
+		.wordmark {
+			font-size: 0.95rem;
+			letter-spacing: 0.1em;
+		}
 	}
 
 	@media (min-width: 900px) {

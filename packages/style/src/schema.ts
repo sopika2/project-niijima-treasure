@@ -76,7 +76,10 @@ const palette = z.strictObject({
 	paper: color,
 	ink: color,
 	/** The second shard of the menu cursor (cyan in Persona 5). */
-	cursor: color
+	cursor: color,
+	/** The two sisters' accents from the landing page: Makoto's cyan and Sae's gold. */
+	makoto: color,
+	sae: color
 });
 
 export const styleSchema = z.strictObject({
@@ -229,6 +232,15 @@ export const styleSchema = z.strictObject({
 			'sign_out'
 		),
 		empty: wordGroup('dashboard', 'widgets'),
+		loader: wordGroup('text'),
+		palace: wordGroup(
+			'target',
+			'missing_title',
+			'missing_body',
+			'error_title',
+			'error_body',
+			'back'
+		),
 		signin: wordGroup(
 			'kicker',
 			'title',
@@ -310,6 +322,7 @@ export const styleSchema = z.strictObject({
 			'date',
 			'note',
 			'note_placeholder',
+			'before_opening',
 			'name',
 			'type',
 			'currency',
@@ -362,6 +375,11 @@ export const styleSchema = z.strictObject({
 			'unit_weekly',
 			'unit_monthly',
 			'unit_yearly',
+			'units_daily',
+			'units_weekly',
+			'units_monthly',
+			'units_yearly',
+			'on_day',
 			'day_of_month',
 			'last_day',
 			'starts',
@@ -423,6 +441,7 @@ export const styleSchema = z.strictObject({
 			'budget_pace',
 			'balance_floor',
 			'pending',
+			'pending_one',
 			'goal_late',
 			'rates_failed',
 			'rates_stale',
@@ -434,6 +453,7 @@ export const styleSchema = z.strictObject({
 			'month_end',
 			'horizon_end',
 			'basis_average',
+			'basis_average_days',
 			'basis_fixed',
 			'what_if',
 			'what_if_hint',
@@ -516,7 +536,9 @@ export const styleSchema = z.strictObject({
 			'drive_missing',
 			'rates_ok',
 			'rates_never',
-			'missing_rates'
+			'missing_rates',
+			'missing_entries',
+			'missing_entries_one'
 		)
 	}),
 	assets: z.strictObject({

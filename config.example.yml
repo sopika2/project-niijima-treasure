@@ -9,7 +9,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 base_currency: HUF # every total and report is shown in this currency
-locale: hu-HU # number and date format, e.g. hu-HU or en-GB
+locale: en-GB # dates and numbers: en-GB is English (Tue 20 Oct, 12,480 Ft); hu-HU is Hungarian
 timezone: Europe/Budapest
 
 # Where the Google Drive folder Niijima-network/Treasure is mounted inside the

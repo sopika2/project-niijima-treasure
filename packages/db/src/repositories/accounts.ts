@@ -1,16 +1,34 @@
-import { and, asc, eq, isNull, lte, sql } from 'drizzle-orm';
+import { and, asc, eq, gte, isNull, lte, sql } from 'drizzle-orm';
 import type { Db } from '../client.ts';
 import { accounts, transactionLegs, transactions, type Account } from '../schema.ts';
 
 export interface AccountBalance {
 	readonly account: Account;
-	/** Opening balance plus every posted, non-deleted leg, in the account's own currency. */
+	/**
+	 * Opening balance plus every posted, non-deleted leg from the opening date on, in the
+	 * account's own currency. Legs dated before the opening date are already part of the
+	 * opening balance, so they still count as income or spending but don't move the balance.
+	 */
 	readonly balanceMinor: number;
 }
 
 /**
+ * The day tracking began: the earliest starting-balance date of any account, archived ones
+ * included. Averages and charts start here, so months before you began don't count as zero.
+ * Null when there are no accounts yet.
+ */
+export function trackingStart(db: Db): string | null {
+	const row = db
+		.select({ day: sql<string | null>`min(${accounts.openingDate})` })
+		.from(accounts)
+		.get();
+	return row?.day ?? null;
+}
+
+/**
  * Balance of every account that is not archived, in display order. With `asOf` (YYYY-MM-DD),
- * entries dated later are left out, so a future-dated bill doesn't change today's balance.
+ * entries dated later are left out, so a future-dated bill doesn't change today's balance,
+ * and an account whose opening date is after `asOf` has no balance yet (0).
  */
 export function accountBalances(
 	db: Db,
@@ -23,10 +41,12 @@ export function accountBalances(
 		})
 		.from(transactionLegs)
 		.innerJoin(transactions, eq(transactions.id, transactionLegs.transactionId))
+		.innerJoin(accounts, eq(accounts.id, transactionLegs.accountId))
 		.where(
 			and(
 				eq(transactions.status, 'posted'),
 				isNull(transactions.deletedAt),
+				gte(transactions.date, accounts.openingDate),
 				options.asOf ? lte(transactions.date, options.asOf) : undefined
 			)
 		)
@@ -42,9 +62,10 @@ export function accountBalances(
 		.all()
 		.map(({ account, moved }) => ({
 			account,
-			// The starting balance counts from its own date on.
+			// Nothing is known about an account before its starting balance.
 			balanceMinor:
-				(options.asOf && account.openingDate > options.asOf ? 0 : account.openingBalanceMinor) +
-				Number(moved)
+				options.asOf && account.openingDate > options.asOf
+					? 0
+					: account.openingBalanceMinor + Number(moved)
 		}));
 }
