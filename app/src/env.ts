@@ -37,9 +37,9 @@ export const variables = defineEnvVars({
 	},
 	ACCESS_MODE: {
 		description:
-			'"discord" requires signing in with Discord on every page; "off" is for local development only.',
+			'"off" (default): no sign-in, anyone who can reach the app gets in (put Cloudflare Access in front). "discord": sign in with Discord.',
 		schema: (value) => {
-			const mode = optional(value) ?? 'discord';
+			const mode = optional(value) ?? 'off';
 			if (mode !== 'discord' && mode !== 'off')
 				throw new Error('ACCESS_MODE must be discord or off');
 			return mode;

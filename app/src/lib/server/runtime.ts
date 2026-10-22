@@ -272,7 +272,7 @@ async function boot(): Promise<Runtime> {
 		`ready · base ${config.base_currency} · drive ${driveStatus.reachable ? 'reachable' : 'NOT reachable'} at ${drive} · access ${access.mode} · extensions: ${extensions.map((extension) => extension.manifest.id).join(', ') || 'none'}`
 	);
 	if (access.mode === 'off')
-		log('boot', 'WARNING: ACCESS_MODE=off. Never expose this instance to the internet.');
+		log('boot', 'No sign-in (ACCESS_MODE=off): anyone who can reach this app gets in.');
 
 	const app: Runtime = {
 		version,
@@ -305,13 +305,6 @@ async function boot(): Promise<Runtime> {
 					tone: 'danger',
 					title: 'Backups to Drive are not running.',
 					detail: snapshot.problem ?? ''
-				});
-			}
-			if (access.mode === 'off') {
-				list.push({
-					tone: 'info',
-					title: 'Sign-in is off (ACCESS_MODE=off).',
-					detail: 'Fine on your own machine. Never expose this instance to the internet like this.'
 				});
 			}
 			return list;
