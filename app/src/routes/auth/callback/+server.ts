@@ -3,7 +3,7 @@ import { userFromCode } from '#lib/server/discord.ts';
 import { log } from '#lib/server/log.ts';
 import { safeNext } from '#lib/server/next.ts';
 import { runtime } from '#lib/server/runtime.ts';
-import { createSession, SESSION_COOKIE, SESSION_DAYS } from '#lib/server/session.ts';
+import { createSession, sessionCookieOptions } from '#lib/server/session.ts';
 import type { RequestHandler } from './$types';
 
 /** Discord sends you back here. Problems go back to the sign-in screen with a message. */
@@ -34,13 +34,12 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 		redirect(303, `/signin?m=refused&id=${user.id}`);
 	}
 
-	cookies.set(SESSION_COOKIE, createSession(user, app.access.sessionSecret), {
-		path: '/',
-		httpOnly: true,
-		sameSite: 'lax',
-		secure: url.protocol === 'https:',
-		maxAge: SESSION_DAYS * 86_400
-	});
+	const cookie = app.access.cookie;
+	cookies.set(
+		cookie.name,
+		createSession(user, app.access.sessionSecret),
+		sessionCookieOptions(cookie, url.protocol === 'https:')
+	);
 	log('auth', `signed in: ${user.name}`);
 	redirect(303, next);
 };

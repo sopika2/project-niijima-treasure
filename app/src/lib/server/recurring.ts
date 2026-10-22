@@ -13,7 +13,8 @@ import {
 	listRules,
 	listTransactions,
 	setRuleNextDue,
-	type RecurringRule
+	type RecurringRule,
+	type Scope
 } from '@treasure/db';
 import { ledgerContext, toBase, today, typedAmount } from './ledger.ts';
 import { log, logError } from './log.ts';
@@ -97,12 +98,12 @@ export function postDueItems(app: Runtime): number {
  * What recurring items and waiting confirmations will add to or take from the balance up to
  * `until`, in the base currency.
  */
-export function upcomingEvents(app: Runtime, until: string): ProjectionEvent[] {
+export function upcomingEvents(app: Runtime, until: string, scope?: Scope): ProjectionEvent[] {
 	const { db } = app.treasury;
 	const day = today(app).day;
 	const events: ProjectionEvent[] = [];
 
-	for (const pending of listTransactions(db, { status: 'pending' })) {
+	for (const pending of listTransactions(db, { status: 'pending', scope })) {
 		for (const leg of pending.legs) {
 			if (pending.kind === 'transfer') continue;
 			const base = toBase(app, leg.amountMinor, leg.currency);
@@ -111,7 +112,7 @@ export function upcomingEvents(app: Runtime, until: string): ProjectionEvent[] {
 		}
 	}
 
-	for (const rule of listRules(db)) {
+	for (const rule of listRules(db, scope)) {
 		if (rule.paused || rule.kind === 'transfer' || !rule.nextDue) continue;
 		const schedule = scheduleOf(rule);
 		if (!schedule) continue;

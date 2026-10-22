@@ -26,6 +26,13 @@ const updatedAt = () => text('updated_at').notNull().$defaultFn(now).$onUpdateFn
 const flag = (name: string) => integer(name, { mode: 'boolean' });
 
 export const accountTypes = ['current', 'savings', 'cash', 'card', 'other'] as const;
+/**
+ * Whose it is: Makoto's, Sae's, or both sisters' (shared). Each persona sees her own and the
+ * shared ones; everything that existed before personas is shared.
+ */
+export const owners = ['makoto', 'sae', 'shared'] as const;
+export type Owner = (typeof owners)[number];
+const owner = () => text('owner', { enum: owners }).notNull().default('shared');
 export const categoryKinds = ['income', 'expense'] as const;
 export const transactionKinds = ['income', 'expense', 'transfer'] as const;
 export const transactionStatuses = ['posted', 'pending'] as const;
@@ -49,6 +56,7 @@ export const accounts = sqliteTable('accounts', {
 	includeInTotal: flag('include_in_total').notNull().default(true),
 	archived: flag('archived').notNull().default(false),
 	sortOrder: integer('sort_order').notNull().default(0),
+	owner: owner(),
 	createdAt: createdAt(),
 	updatedAt: updatedAt()
 });
@@ -186,15 +194,16 @@ export const budgets = sqliteTable(
 		limitMinor: integer('limit_minor').notNull(),
 		currency: text('currency').notNull(),
 		rollover: flag('rollover').notNull().default(false),
+		owner: owner(),
 		createdAt: createdAt()
 	},
 	(table) => [
-		// One limit per category per month, and one default (month = null) per category.
-		uniqueIndex('budgets_category_month_idx')
-			.on(table.categoryId, table.month)
+		// One limit per owner, category and month, and one default (month = null) per owner and category.
+		uniqueIndex('budgets_owner_category_month_idx')
+			.on(table.owner, table.categoryId, table.month)
 			.where(sql`${table.month} is not null`),
-		uniqueIndex('budgets_category_default_idx')
-			.on(table.categoryId)
+		uniqueIndex('budgets_owner_category_default_idx')
+			.on(table.owner, table.categoryId)
 			.where(sql`${table.month} is null`),
 		check('budgets_limit_positive', sql`${table.limitMinor} > 0`)
 	]
@@ -210,6 +219,7 @@ export const goals = sqliteTable('goals', {
 	/** When set, progress is this account's balance; otherwise the sum of contributions. */
 	accountId: text('account_id').references(() => accounts.id),
 	archived: flag('archived').notNull().default(false),
+	owner: owner(),
 	createdAt: createdAt()
 });
 

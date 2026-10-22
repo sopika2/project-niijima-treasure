@@ -408,6 +408,8 @@ export const styleSchema = z.strictObject({
 			'pick_category',
 			'month_total'
 		),
+		/** Makoto, Sae and what they share: the owner picker and the switch in the menu. */
+		personas: wordGroup('label', 'makoto', 'sae', 'shared', 'switch', 'hint'),
 		treasures: wordGroup(
 			'title',
 			'subtitle',

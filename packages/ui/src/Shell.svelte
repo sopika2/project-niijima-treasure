@@ -24,6 +24,8 @@
 		/** The money counter on the command menu. */
 		wallet?: { label: string; text: string } | null;
 		art?: MenuArt | null;
+		/** Whose books you're looking at (Makoto or Sae): in the top bar, the sidebar, or above the page on phones. */
+		switcher?: Snippet;
 		children: Snippet;
 	}
 
@@ -37,6 +39,7 @@
 		banner,
 		wallet = null,
 		art = null,
+		switcher,
 		children
 	}: Props = $props();
 
@@ -82,6 +85,7 @@
 		</a>
 		{#if current}<span class="where" aria-hidden="true">{current.label}</span>{/if}
 		<div class="top-actions">
+			{#if switcher}<div class="switch switch-top">{@render switcher()}</div>{/if}
 			{#if action}
 				<button type="button" class="action action-top" onclick={action.onclick}>
 					<span class="action-inner"><Icon name="plus" />{action.label}</span>
@@ -124,6 +128,7 @@
 				</li>
 			{/each}
 		</ul>
+		{#if switcher}<div class="switch">{@render switcher()}</div>{/if}
 	</nav>
 
 	{#if action}
@@ -140,6 +145,7 @@
 	{/if}
 
 	<main class="content" inert={open}>
+		{#if switcher}<div class="switch switch-phone">{@render switcher()}</div>{/if}
 		{#if banner}<div class="banner">{@render banner()}</div>{/if}
 		{@render children()}
 	</main>
@@ -400,8 +406,25 @@
 		transform: skewX(var(--tr-skew)) scaleX(1);
 	}
 
+	.switch {
+		display: flex;
+		flex: none;
+		align-items: center;
+	}
+	.switch-phone {
+		display: none;
+		justify-content: flex-end;
+		margin-block-end: var(--tr-space-md);
+	}
+
 	/* Phones: the page's own title says where you are, and the kanji would push Menu off. */
 	@media (max-width: 599.98px) {
+		.switch-top {
+			display: none;
+		}
+		.switch-phone {
+			display: flex;
+		}
 		.where,
 		.wordmark small,
 		.menu-inner kbd {

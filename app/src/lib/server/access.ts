@@ -1,5 +1,12 @@
 import type { DiscordApp } from './discord.ts';
-import { readSession, SESSION_COOKIE, type ReadSession, type SessionUser } from './session.ts';
+import {
+	readSession,
+	SESSION_COOKIE,
+	sessionCookie,
+	type ReadSession,
+	type SessionCookie,
+	type SessionUser
+} from './session.ts';
 
 export type AccessUser = SessionUser;
 export type VerifiedUser = ReadSession;
@@ -12,6 +19,8 @@ export interface AccessGate {
 	allows(discordId: string): boolean;
 	readonly discord: DiscordApp | null;
 	readonly sessionSecret: string;
+	/** The cookie sign-in is kept in. */
+	readonly cookie: SessionCookie;
 }
 
 /**
@@ -22,16 +31,24 @@ export function discordAccess(options: {
 	readonly app: DiscordApp;
 	readonly sessionSecret: string;
 	readonly allowedIds: readonly string[];
+	readonly domain?: string;
 }): AccessGate {
 	const allowed = new Set(options.allowedIds);
+	const cookie = sessionCookie(options.domain);
+	// The app-only cookie still counts after switching to a shared one, so nobody is signed out.
+	const names = [...new Set([cookie.name, SESSION_COOKIE])];
 	return {
 		mode: 'discord',
 		discord: options.app,
 		sessionSecret: options.sessionSecret,
+		cookie,
 		allows: (id) => allowed.has(id),
 		verify(cookies) {
-			const user = readSession(cookies.get(SESSION_COOKIE), options.sessionSecret);
-			return user && allowed.has(user.id) ? user : null;
+			for (const name of names) {
+				const user = readSession(cookies.get(name), options.sessionSecret);
+				if (user && allowed.has(user.id)) return user;
+			}
+			return null;
 		}
 	};
 }
@@ -41,6 +58,7 @@ export function accessOff(): AccessGate {
 		mode: 'off',
 		discord: null,
 		sessionSecret: '',
+		cookie: sessionCookie(undefined),
 		allows: () => true,
 		verify: () => null
 	};

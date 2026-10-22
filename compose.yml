@@ -8,7 +8,10 @@
 
 services:
   treasure:
-    build: .
+    build:
+      context: .
+      args:
+        TREASURE_ORIGIN: https://${TREASURE_HOST:-treasure.niijimasisters.com}
     image: niijima/treasure:latest
     container_name: niijima-treasure
     restart: unless-stopped
@@ -30,12 +33,12 @@ services:
       - proxy
     labels:
       - traefik.enable=true
-      - traefik.docker.network=${TRAEFIK_NETWORK:-proxy}
+      - traefik.docker.network=${TRAEFIK_NETWORK:-zipline_default}
       - traefik.http.routers.treasure.rule=Host(`${TREASURE_HOST:-treasure.niijimasisters.com}`)
       - traefik.http.routers.treasure.entrypoints=${TRAEFIK_ENTRYPOINT:-web}
       - traefik.http.services.treasure.loadbalancer.server.port=3000
 
 networks:
   proxy:
-    name: ${TRAEFIK_NETWORK:-proxy}
+    name: ${TRAEFIK_NETWORK:-zipline_default}
     external: true

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { discordAccess } from './access.ts';
-import { createSession, readSession, SESSION_COOKIE } from './session.ts';
+import { createSession, readSession, SESSION_COOKIE, SHARED_SESSION_COOKIE } from './session.ts';
 
 const secret = 'test-secret-0123456789abcdef';
 const user = { id: '1234567890123456789', name: 'Els' };
@@ -37,6 +37,23 @@ describe('login sessions', () => {
 			gate.verify(cookies(createSession({ id: '111111111111111111', name: 'x' }, secret)))
 		).toBeNull();
 		expect(gate.allows('111111111111111111')).toBe(false);
+	});
+
+	it('shares sign-in across the domain, and still accepts the app-only cookie', () => {
+		const gate = discordAccess({
+			app: { clientId: 'c', clientSecret: 's', redirectUri: 'https://x/auth/callback' },
+			sessionSecret: secret,
+			allowedIds: [user.id],
+			domain: 'niijimasisters.com'
+		});
+		expect(gate.cookie).toEqual({ name: SHARED_SESSION_COOKIE, domain: 'niijimasisters.com' });
+		const value = createSession(user, secret);
+		const only = (wanted: string) => ({
+			get: (name: string) => (name === wanted ? value : undefined)
+		});
+		expect(gate.verify(only(SHARED_SESSION_COOKIE))).toMatchObject(user);
+		expect(gate.verify(only(SESSION_COOKIE))).toMatchObject(user);
+		expect(gate.verify(only('other'))).toBeNull();
 	});
 
 	it('asks to renew once the cookie is a day old, so the login never runs out while used', () => {

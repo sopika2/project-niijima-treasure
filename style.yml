@@ -443,6 +443,13 @@ copy:
     rates_failed: Exchange rates could not be fetched.
     rates_stale: 'Exchange rates are {days} days old.'
     backup: Your data isn't being saved to Drive.
+  personas:
+    label: Whose
+    makoto: Makoto
+    sae: Sae
+    shared: Shared
+    switch: Whose books
+    hint: Each sister sees her own accounts, budgets and Treasures, plus the shared ones.
   projection:
     title: Forecast
     lowest: Lowest point

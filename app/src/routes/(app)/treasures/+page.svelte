@@ -12,6 +12,7 @@
 		Sheet,
 		useUi
 	} from '@treasure/ui';
+	import OwnerField from '#lib/components/OwnerField.svelte';
 	import { errorText, submitter, type Errors } from '#lib/forms.ts';
 	import { notify } from '#lib/toast.svelte.ts';
 	import type { PageProps } from './$types';
@@ -253,6 +254,7 @@
 		>
 			<input id="{uid}-deadline" name="deadline" type="date" bind:value={values.deadline} />
 		</Field>
+		<OwnerField value={editing && editing !== 'new' ? editing.owner : data.persona} />
 		{#if errors.form}<p class="error">{message('form')}</p>{/if}
 		<Button type="submit">{ui.copy.actions.save}</Button>
 	</form>

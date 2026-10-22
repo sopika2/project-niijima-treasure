@@ -6,8 +6,10 @@ import {
 	transactionLegs,
 	transactions,
 	type Account,
-	type Category
+	type Category,
+	type Owner
 } from '../schema.ts';
+import { ownedBy, type Scope } from '../scope.ts';
 
 /* ── Accounts ────────────────────────────────────────────────────────────── */
 
@@ -18,13 +20,23 @@ export interface AccountInput {
 	readonly openingBalanceMinor: number;
 	readonly openingDate: string;
 	readonly includeInTotal: boolean;
+	/** Whose account: makoto, sae or shared. Left out on update, it stays as it was. */
+	readonly owner?: Owner;
 }
 
-export function listAccounts(db: Db, options: { includeArchived?: boolean } = {}): Account[] {
+export function listAccounts(
+	db: Db,
+	options: { includeArchived?: boolean; scope?: Scope | null } = {}
+): Account[] {
 	return db
 		.select()
 		.from(accounts)
-		.where(options.includeArchived ? undefined : eq(accounts.archived, false))
+		.where(
+			and(
+				options.includeArchived ? undefined : eq(accounts.archived, false),
+				ownedBy(accounts.owner, options.scope)
+			)
+		)
 		.orderBy(asc(accounts.archived), asc(accounts.sortOrder), asc(accounts.name))
 		.all();
 }

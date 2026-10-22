@@ -17,6 +17,7 @@
 		"better-sqlite3": "^13.0.3"
 	},
 	"devDependencies": {
+		"@niijima/design": "github:sopika2/Niijima-Design#ab9ae651e5a280f23565f11fb1975ff25d78304b",
 		"@sveltejs/adapter-node": "^6.0.0",
 		"@sveltejs/kit": "^3.1.0",
 		"@sveltejs/vite-plugin-svelte": "^7.3.1",

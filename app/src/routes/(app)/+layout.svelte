@@ -1,5 +1,8 @@
 <script lang="ts">
-	import { goto, onNavigate } from '$app/navigation';
+	import '@niijima/design/tokens.css';
+	import '@niijima/design/components.css';
+	import { PersonaSwitch } from '@niijima/design/svelte';
+	import { goto, invalidateAll, onNavigate } from '$app/navigation';
 	import { formatMoney, money } from '@treasure/core';
 	import { navigating, page } from '$app/state';
 	import { Loader, Notice, Shell, Sheet, Toast, useUi } from '@treasure/ui';
@@ -115,6 +118,14 @@
 
 <svelte:window onkeydown={shortcut} />
 
+{#snippet switcher()}
+	<PersonaSwitch
+		value={data.persona}
+		labels={{ makoto: copy.personas.makoto, sae: copy.personas.sae }}
+		onchange={() => invalidateAll()}
+	/>
+{/snippet}
+
 {#snippet problems()}
 	{#each data.problems as problem (problem.title)}
 		<Notice tone={problem.tone} title={problem.title}>{problem.detail}</Notice>
@@ -138,6 +149,7 @@
 	art={page.data.menuArt}
 	action={{ label: copy.actions.quick_add, onclick: openAdd }}
 	banner={data.problems.length > 0 ? problems : undefined}
+	{switcher}
 >
 	{@render children()}
 </Shell>
@@ -165,3 +177,12 @@
 <Toast message={toast.message} key={toast.key} />
 
 {#if slow}<Loader text={copy.loader.text} />{/if}
+
+<style>
+	/* Each sister's books in her colours (dark scheme only): navy for Makoto, crimson for Sae. */
+	:global(:root[data-scheme='dark'][data-persona]) {
+		--tr-color-surface: var(--nj-surface);
+		--tr-color-surface-raised: var(--nj-surface-raised);
+		--tr-color-cursor: var(--nj-hi);
+	}
+</style>

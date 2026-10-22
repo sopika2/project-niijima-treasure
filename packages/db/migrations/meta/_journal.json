@@ -15,6 +15,13 @@
       "when": 1792343388673,
       "tag": "0001_ledger",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1792602555207,
+      "tag": "0002_personas",
+      "breakpoints": true
     }
   ]
 }

@@ -694,7 +694,7 @@
 		stroke-linejoin: miter;
 	}
 	.blade .accent {
-		fill: var(--tr-color-makoto);
+		fill: var(--tr-color-cursor);
 	}
 	.blade .back-shard {
 		fill: var(--tr-color-accent);
@@ -733,7 +733,7 @@
 		transform: rotate(-3deg);
 		transform-origin: 0 100%;
 		filter: drop-shadow(-6px 6px 0 var(--tr-color-ink))
-			drop-shadow(10px 9px 0 var(--tr-color-makoto));
+			drop-shadow(10px 9px 0 var(--tr-color-cursor));
 		animation: speech var(--tr-duration-normal) var(--tr-ease-emphasized) both;
 	}
 	@keyframes speech {
@@ -774,7 +774,7 @@
 		clip-path: polygon(0 0, 100% 8%, 96% 100%, 2% 92%);
 	}
 	.tag b {
-		color: var(--tr-color-makoto);
+		color: var(--tr-color-cursor);
 		font: 400 30px/1 var(--tr-font-heading);
 	}
 	.tag span {

@@ -1,12 +1,28 @@
 import { formatSchedule, type CleanRecurring } from '@treasure/core';
-import { and, asc, count, eq, isNull } from 'drizzle-orm';
+import { and, asc, count, eq, inArray, isNull } from 'drizzle-orm';
 import type { Db } from '../client.ts';
-import { recurringRules, transactions, type RecurringRule } from '../schema.ts';
+import {
+	accounts,
+	recurringRules,
+	transactionLegs,
+	transactions,
+	type RecurringRule
+} from '../schema.ts';
+import { legInScope, ownedBy, type Scope } from '../scope.ts';
 
-export function listRules(db: Db): RecurringRule[] {
+/** Every rule, or with a scope the ones on an account it can see (a rule belongs to its account's owner). */
+export function listRules(db: Db, scope?: Scope | null): RecurringRule[] {
 	return db
 		.select()
 		.from(recurringRules)
+		.where(
+			scope
+				? inArray(
+						recurringRules.accountId,
+						db.select({ id: accounts.id }).from(accounts).where(ownedBy(accounts.owner, scope))
+					)
+				: undefined
+		)
 		.orderBy(asc(recurringRules.paused), asc(recurringRules.nextDue), asc(recurringRules.name))
 		.all();
 }
@@ -81,13 +97,27 @@ export function deleteRule(db: Db, id: string): boolean {
 	});
 }
 
-/** Live transactions waiting for a tap to confirm, oldest first. */
-export function countPending(db: Db): number {
+/** Live transactions waiting for a tap to confirm (with a scope, on accounts it can see). */
+export function countPending(db: Db, scope?: Scope | null): number {
 	return (
 		db
 			.select({ n: count() })
 			.from(transactions)
-			.where(and(eq(transactions.status, 'pending'), isNull(transactions.deletedAt)))
+			.where(
+				and(
+					eq(transactions.status, 'pending'),
+					isNull(transactions.deletedAt),
+					scope
+						? inArray(
+								transactions.id,
+								db
+									.select({ id: transactionLegs.transactionId })
+									.from(transactionLegs)
+									.where(legInScope(db, scope))
+							)
+						: undefined
+				)
+			)
 			.get()?.n ?? 0
 	);
 }

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import {
+		Badge,
 		Button,
 		Card,
 		EmptyState,
@@ -11,6 +12,7 @@
 		Progress,
 		useUi
 	} from '@treasure/ui';
+	import OwnerField from '#lib/components/OwnerField.svelte';
 	import { errorText, submitter, type Errors } from '#lib/forms.ts';
 	import { notify } from '#lib/toast.svelte.ts';
 	import type { PageProps } from './$types';
@@ -63,11 +65,15 @@
 	</section>
 
 	<ul class="budgets">
-		{#each data.rows as row (row.categoryId)}
-			{@const errors = rowErrors[row.categoryId] ?? {}}
+		{#each data.rows as row (`${row.owner}:${row.categoryId}`)}
+			{@const key = `${row.owner}:${row.categoryId}`}
+			{@const errors = rowErrors[key] ?? {}}
 			<li class="budget" data-state={row.state} style="--chip: var(--tr-chart-{row.color})">
 				<div class="head">
-					<span class="name"><span class="dot"></span>{row.name}</span>
+					<span class="name"
+						><span class="dot"></span>{row.name}
+						{#if row.owner !== data.persona}<Badge>{ui.copy.personas[row.owner]}</Badge>{/if}</span
+					>
 					<span class="figures">
 						<Money amount={row.spentMinor} currency={row.currency} size="lg" />
 						<span class="of">/ <Money amount={row.limitMinor} currency={row.currency} /></span>
@@ -92,13 +98,13 @@
 						class="icon-button"
 						type="button"
 						aria-label="{ui.copy.actions.edit} {row.name}"
-						aria-expanded={editingId === row.categoryId}
-						onclick={() => (editingId = editingId === row.categoryId ? null : row.categoryId)}
+						aria-expanded={editingId === key}
+						onclick={() => (editingId = editingId === key ? null : key)}
 					>
 						<Icon name="edit" size="1em" />
 					</button>
 				</div>
-				{#if editingId === row.categoryId}
+				{#if editingId === key}
 					<div class="edit">
 						<form
 							class="inline"
@@ -109,21 +115,17 @@
 									editingId = null;
 									notify(words.saved);
 								},
-								(next) => (rowErrors = { ...rowErrors, [row.categoryId]: next })
+								(next) => (rowErrors = { ...rowErrors, [key]: next })
 							)}
 						>
 							<input type="hidden" name="categoryId" value={row.categoryId} />
+							<input type="hidden" name="owner" value={row.owner} />
 							<Field
 								label={words.limit}
-								for="{uid}-{row.categoryId}"
+								for="{uid}-{key}"
 								error={errorText(ui.copy, errors, 'limit')}
 							>
-								<input
-									id="{uid}-{row.categoryId}"
-									name="limit"
-									inputmode="decimal"
-									value={row.typed}
-								/>
+								<input id="{uid}-{key}" name="limit" inputmode="decimal" value={row.typed} />
 							</Field>
 							<Button type="submit">{ui.copy.actions.save}</Button>
 						</form>
@@ -133,6 +135,7 @@
 							use:enhance={submitter(() => notify(words.removed))}
 						>
 							<input type="hidden" name="categoryId" value={row.categoryId} />
+							<input type="hidden" name="owner" value={row.owner} />
 							<Button type="submit" variant="ghost"><Icon name="trash" />{words.remove}</Button>
 						</form>
 					</div>
@@ -184,6 +187,7 @@
 					bind:value={limit}
 				/>
 			</Field>
+			<OwnerField value={data.persona} />
 			<Button type="submit"><Icon name="plus" />{words.add}</Button>
 		</form>
 	</Card>

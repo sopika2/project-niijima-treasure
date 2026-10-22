@@ -37,9 +37,9 @@ export const variables = defineEnvVars({
 	},
 	ACCESS_MODE: {
 		description:
-			'"discord" requires signing in with Discord on every page; "off" is for local development only.',
+			'"off" (default): no sign-in, anyone who can reach the app gets in (put Cloudflare Access in front). "discord": sign in with Discord.',
 		schema: (value) => {
-			const mode = optional(value) ?? 'discord';
+			const mode = optional(value) ?? 'off';
 			if (mode !== 'discord' && mode !== 'off')
 				throw new Error('ACCESS_MODE must be discord or off');
 			return mode;
@@ -56,6 +56,17 @@ export const variables = defineEnvVars({
 	SESSION_SECRET: {
 		description: 'Random string that signs login cookies (openssl rand -hex 32).',
 		schema: optional
+	},
+	SESSION_DOMAIN: {
+		description:
+			'Parent domain (e.g. niijimasisters.com) to share sign-in with every Niijima app that has the same SESSION_SECRET. Empty: this app only.',
+		schema: (value) => {
+			const domain = optional(value)?.replace(/^\./, '');
+			if (domain && !/^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(domain)) {
+				throw new Error('SESSION_DOMAIN must be a domain name like niijimasisters.com');
+			}
+			return domain;
+		}
 	},
 	PUBLIC_URL: {
 		description: 'The address people open, e.g. https://treasure.niijimasisters.com',

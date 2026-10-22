@@ -14,41 +14,44 @@ import {
 	setCategoryArchived,
 	updateAccount
 } from '@treasure/db';
-import { categoryOption, fieldErrors, text, today } from '#lib/server/ledger.ts';
+import { categoryOption, fieldErrors, ownerOf, scopeOf, text, today } from '#lib/server/ledger.ts';
 import { runtime } from '#lib/server/runtime.ts';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ locals }) => {
 	const app = await runtime();
 	const { db } = app.treasury;
 	const usage = categoryUsage(db);
 	return {
-		accounts: accountBalances(db, { asOf: today(app).day, includeArchived: true }).map(
-			({ account, balanceMinor }) => ({
-				id: account.id,
+		accounts: accountBalances(db, {
+			asOf: today(app).day,
+			includeArchived: true,
+			scope: scopeOf(locals)
+		}).map(({ account, balanceMinor }) => ({
+			id: account.id,
+			name: account.name,
+			owner: account.owner,
+			type: account.type,
+			currency: account.currency,
+			balance: balanceMinor,
+			includeInTotal: account.includeInTotal,
+			archived: account.archived,
+			locked: accountInUse(db, account.id),
+			form: {
 				name: account.name,
 				type: account.type,
 				currency: account.currency,
-				balance: balanceMinor,
-				includeInTotal: account.includeInTotal,
-				archived: account.archived,
-				locked: accountInUse(db, account.id),
-				form: {
-					name: account.name,
-					type: account.type,
-					currency: account.currency,
-					openingBalance:
-						account.openingBalanceMinor === 0
-							? ''
-							: toDecimalString(money(account.openingBalanceMinor, account.currency)).replace(
-									/\.00$/,
-									''
-								),
-					openingDate: account.openingDate,
-					includeInTotal: account.includeInTotal
-				}
-			})
-		),
+				openingBalance:
+					account.openingBalanceMinor === 0
+						? ''
+						: toDecimalString(money(account.openingBalanceMinor, account.currency)).replace(
+								/\.00$/,
+								''
+							),
+				openingDate: account.openingDate,
+				includeInTotal: account.includeInTotal
+			}
+		})),
 		categories: listCategories(db, { includeArchived: true }).map((category) => ({
 			...categoryOption(category),
 			archived: category.archived,
@@ -68,12 +71,12 @@ const accountForm = (form: FormData) => ({
 });
 
 export const actions: Actions = {
-	saveAccount: async ({ request }) => {
+	saveAccount: async ({ request, locals }) => {
 		const app = await runtime();
 		const form = await request.formData();
 		const id = text(form, 'id');
 		try {
-			const clean = checkAccount(accountForm(form));
+			const clean = { ...checkAccount(accountForm(form)), owner: ownerOf(form, locals) };
 			if (id) {
 				if (!updateAccount(app.treasury.db, id, clean)) {
 					return fail(404, { scope: 'account', errors: { form: 'not_found' } });
